@@ -31,16 +31,16 @@ const QUIRKS = [
     // The Aeotec devices don't seem to notify on current changes, only on
     // instantaneous power changes. So we exclude this for now. We might be
     // able to support this by adding a read of current each time we get a
-    // power changed.
+    // power change.
     zwInfo: {
       manufacturerId: AEOTEC_MANUFACTURER_ID,
     },
     excludeProperties: ['current'],
   },
   {
-    // The Aeotech ZW096 says it supports the MULTILEVEL command class, but
-    // setting it acts like a no-op. So we remove the level property this so
-    // that the UI doesn't see it.
+    // The Aeotec ZW096 says it supports the MULTILEVEL command class, but
+    // setting it acts like a no-op. We remove the level property so that
+    // the UI doesn't see it.
     zwInfo: {
       manufacturerId: AEOTEC_MANUFACTURER_ID,
       productId: AEOTEC_ZW096_PRODUCT_ID,
