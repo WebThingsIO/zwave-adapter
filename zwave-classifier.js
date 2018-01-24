@@ -23,6 +23,22 @@ const COMMAND_CLASS_METER = 50;               // 0x32
 //const COMMAND_CLASS_SWITCH_ALL = 39;        // 0x27
 const COMMAND_CLASS_CONFIGURATION = 112;    // 0x98
 
+const QUIRKS = [
+  {
+    zwInfo: {
+      manufacturerId: '0x0086',
+    },
+    excludeProperties: ['current'],
+  },
+  {
+    zwInfo: {
+      manufacturerId: '0x0086',
+      productId: '0x0060',
+    },
+    excludeProperties: ['level'],
+  },
+];
+
 class ZWaveClassifier {
 
   constructor() {
@@ -46,6 +62,27 @@ class ZWaveClassifier {
 
   addProperty(node, name, descr, valueId,
               setZwValueFromValue, parseValueFromZwValue) {
+    // Search through the known quirks and see if we need to apply any.
+    for (const quirk of QUIRKS) {
+      if (!quirk.hasOwnProperty('excludeProperties')) {
+        continue;
+      }
+
+      let match = true;
+      for (const id in quirk.zwInfo) {
+        if (node.zwInfo[id] !== quirk.zwInfo[id]) {
+          match = false;
+          break;
+        }
+      }
+
+      if (match && quirk.excludeProperties.includes(name)) {
+        console.debug(
+          `Not adding property ${name} to device ${node.id} due to quirk.`);
+        return;
+      }
+    }
+
     let property = new ZWaveProperty(node, name, descr, valueId,
                                      setZwValueFromValue,
                                      parseValueFromZwValue);
@@ -110,12 +147,9 @@ class ZWaveClassifier {
       );
     }
 
-    /*
-    For the Aeotect ZW096, current doesn't seem to be useful.
-
     let currentValueId = node.findValueId(COMMAND_CLASS_METER, 1, 20);
     if (currentValueId) {
-      node.type = THING_TYPE_SMART_PLUG;
+      node.type = Constants.THING_TYPE_SMART_PLUG;
       this.addProperty(
         node,                   // node
         'current',              // name
@@ -126,8 +160,8 @@ class ZWaveClassifier {
         currentValueId          // valueId
       );
     }
-    */
 
+    // TODO: add this data into the quirks
     if (node.zwInfo.manufacturer === 'Aeotec') {
       // When the user presses the button, tell us about it
       node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
