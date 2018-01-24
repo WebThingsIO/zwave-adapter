@@ -43,7 +43,8 @@ class ZWaveProperty extends Property {
 
     var zwValue = device.zwValues[valueId];
     if (zwValue) {
-      this.value = zwValue.value;
+      let [value, _logValue] = this.parseValueFromZwValue(zwValue.value);
+      this.value = value;
     }
   }
 
@@ -57,6 +58,17 @@ class ZWaveProperty extends Property {
   parseIdentityValue(zwData) {
     let propertyValue = zwData;
     return [propertyValue, '' + propertyValue];
+  }
+
+  parseOnOffLevelZwValue(zwData) {
+    // For devices (like the Aeotec ZW099) which support level but don't
+    // support on/off we fake on/off
+    let ret = this.parseLevelZwValue(zwData);
+    if (this.name === 'on') {
+      let value = this.level > 0;
+      return [value, '' + value];
+    }
+    return ret;
   }
 
   parseLevelZwValue(zwData) {
@@ -81,6 +93,23 @@ class ZWaveProperty extends Property {
   }
 
   /**
+   * @method setOnOffLevelValue
+   *
+   * Special function used when a device only supports level and doesn't
+   * support on/off.
+   */
+  setOnOffLevelValue(value) {
+    let percent;
+    if (this.name === 'on') {
+      percent = value ? 100 : 0;
+    } else {
+      percent = value;
+    }
+    return this.setLevelValue(percent);
+  }
+
+  /**
+   * @method setLevelValue
    *
    * The ZWave spec for COMMAND_CLASS_SWITCH_MULTILEVEL maps the values
    * 0-99 onto 0%-100%
