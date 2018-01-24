@@ -77,7 +77,7 @@ class ZWaveClassifier {
       }
 
       if (match && quirk.excludeProperties.includes(name)) {
-        console.debug(
+        console.log(
           `Not adding property ${name} to device ${node.id} due to quirk.`);
         return;
       }
