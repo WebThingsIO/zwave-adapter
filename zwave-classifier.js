@@ -25,13 +25,13 @@ const COMMAND_CLASS_CONFIGURATION = 112;    // 0x98
 
 const QUIRKS = [
   {
-    identifiers: {
+    zwInfo: {
       manufacturerId: '0x0086',
     },
     excludeProperties: ['current'],
   },
   {
-    identifiers: {
+    zwInfo: {
       manufacturerId: '0x0086',
       productId: '0x0060',
     },
@@ -69,8 +69,8 @@ class ZWaveClassifier {
       }
 
       let match = true;
-      for (const id in quirk.identifiers) {
-        if (node.zwInfo[id] !== quirk.identifiers[id]) {
+      for (const id in quirk.zwInfo) {
+        if (node.zwInfo[id] !== quirk.zwInfo[id]) {
           match = false;
           break;
         }
