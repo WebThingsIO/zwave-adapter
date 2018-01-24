@@ -23,17 +23,27 @@ const COMMAND_CLASS_METER = 50;               // 0x32
 //const COMMAND_CLASS_SWITCH_ALL = 39;        // 0x27
 const COMMAND_CLASS_CONFIGURATION = 112;    // 0x98
 
+const AEOTEC_MANUFACTURER_ID = '0x0086';
+const AEOTEC_ZW096_PRODUCT_ID = '0x0060';
+
 const QUIRKS = [
   {
+    // The Aeotec devices don't seem to notify on current changes, only on
+    // instantaneous power changes. So we exclude this for now. We might be
+    // able to support this by adding a read of current each time we get a
+    // power changed.
     zwInfo: {
-      manufacturerId: '0x0086',
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
     },
     excludeProperties: ['current'],
   },
   {
+    // The Aeotech ZW096 says it supports the MULTILEVEL command class, but
+    // setting it acts like a no-op. So we remove the level property this so
+    // that the UI doesn't see it.
     zwInfo: {
-      manufacturerId: '0x0086',
-      productId: '0x0060',
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
+      productId: AEOTEC_ZW096_PRODUCT_ID,
     },
     excludeProperties: ['level'],
   },
@@ -45,10 +55,12 @@ class ZWaveClassifier {
   }
 
   classify(node) {
-    let binarySwitchValueId =
+    const binarySwitchValueId =
       node.findValueId(COMMAND_CLASS_SWITCH_BINARY, 1, 0);
-    if (binarySwitchValueId) {
-      this.initSwitch(node, binarySwitchValueId);
+    const levelValueId =
+      node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL, 1, 0);
+    if (binarySwitchValueId || levelValueId) {
+      this.initSwitch(node, binarySwitchValueId, levelValueId);
       return;
     }
 
@@ -89,21 +101,46 @@ class ZWaveClassifier {
     node.properties.set(name, property);
   }
 
-  initSwitch(node, binarySwitchValueId) {
-    node.type = Constants.THING_TYPE_ON_OFF_SWITCH;
-    this.addProperty(
-      node,                     // node
-      'on',                     // name
-      {                         // property decscription
-        type: 'boolean'
-      },
-      binarySwitchValueId       // valueId
-    );
-
-    const levelValueId =
-      node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL, 1, 0);
-    if (levelValueId) {
+  initSwitch(node, binarySwitchValueId, levelValueId) {
+    if (binarySwitchValueId) {
+      node.type = Constants.THING_TYPE_ON_OFF_SWITCH;
+      this.addProperty(
+        node,                     // node
+        'on',                     // name
+        {                         // property decscription
+          type: 'boolean'
+        },
+        binarySwitchValueId       // valueId
+      );
+      if (levelValueId) {
+        node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+        this.addProperty(
+          node,                   // node
+          'level',                // name
+          {                       // property decscription
+            type: 'number',
+            unit: 'percent',
+            min: 0,
+            max: 100,
+          },
+          levelValueId,           // valueId
+          'setLevelValue',        // setZwValueFromValue
+          'parseLevelZwValue'     // parseValueFromZwValue
+        );
+      }
+    } else {
+      // For switches which don't support the on/off we fake it using level
       node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+      this.addProperty(
+        node,                     // node
+        'on',                     // name
+        {                         // property decscription
+          type: 'boolean'
+        },
+        levelValueId,             // valueId
+        'setOnOffLevelValue',     // setZwValueFromValue
+        'parseOnOffLevelZwValue'  // parseValueFromZwValue
+      );
       this.addProperty(
         node,                   // node
         'level',                // name
@@ -114,8 +151,8 @@ class ZWaveClassifier {
           max: 100,
         },
         levelValueId,           // valueId
-        'setLevelValue',        // setZwValueFromValue
-        'parseLevelZwValue'     // parseValueFromZwValue
+        'setOnOffLevelValue',   // setZwValueFromValue
+        'parseOnOffLevelZwValue'// parseValueFromZwValue
       );
     }
 
