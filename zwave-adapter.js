@@ -39,11 +39,15 @@ class ZWaveAdapter extends Adapter {
     // prints at the beginning of many functions to print some info.
     this.debugFlow = false;
 
-    // Check user profile directory first.
-    let logDir = path.join(__dirname, '..', '..', 'log');
-    if (!fs.existsSync(logDir) || !fs.lstatSync(logDir).isDirectory()) {
-      // Default to current directory.
-      logDir = '.';
+    // Default to current directory.
+    let logDir = '.';
+    if (process.env.hasOwnProperty('MOZIOT_HOME')) {
+      // Check user profile directory.
+      const profileDir = path.join(process.env.MOZIOT_HOME, 'log');
+      if (fs.existsSync(profileDir) &&
+          fs.lstatSync(profileDir).isDirectory()) {
+        logDir = profileDir;
+      }
     }
 
     this.zwave = new ZWaveModule({
