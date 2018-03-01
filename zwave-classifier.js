@@ -10,8 +10,18 @@
 
 'use strict';
 
-const Constants = require('../addon-constants');
 const ZWaveProperty = require('./zwave-property');
+
+let Constants;
+try {
+  Constants = require('../addon-constants');
+} catch (e) {
+  if (e.code !== 'MODULE_NOT_FOUND') {
+    throw e;
+  }
+
+  Constants = require('gateway-addon').Constants;
+}
 
 // See; http://wiki.micasaverde.com/index.php/ZWave_Command_Classes for a
 // complete list of command classes.
