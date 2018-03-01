@@ -9,10 +9,12 @@
 
 'use strict';
 
-var Adapter = require('../adapter');
-var ZWaveNode = require('./zwave-node');
-var SerialPort = require('serialport');
-var zwaveClassifier = require('./zwave-classifier');
+const path = require('path');
+const fs = require('fs');
+const Adapter = require('../adapter');
+const ZWaveNode = require('./zwave-node');
+const SerialPort = require('serialport');
+const zwaveClassifier = require('./zwave-classifier');
 var ZWaveModule;
 
 const DEBUG = false;
@@ -37,10 +39,21 @@ class ZWaveAdapter extends Adapter {
     // prints at the beginning of many functions to print some info.
     this.debugFlow = false;
 
+    // Default to current directory.
+    let logDir = '.';
+    if (process.env.hasOwnProperty('MOZIOT_HOME')) {
+      // Check user profile directory.
+      const profileDir = path.join(process.env.MOZIOT_HOME, 'log');
+      if (fs.existsSync(profileDir) &&
+          fs.lstatSync(profileDir).isDirectory()) {
+        logDir = profileDir;
+      }
+    }
+
     this.zwave = new ZWaveModule({
       SaveConfiguration: true,
       ConsoleOutput: false,
-      UserPath: '.',
+      UserPath: logDir,
     });
     this.zwave.on('controller command', this.controllerCommand.bind(this));
     this.zwave.on('driver ready', this.driverReady.bind(this));
