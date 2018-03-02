@@ -11,10 +11,21 @@
 
 const path = require('path');
 const fs = require('fs');
-const Adapter = require('../adapter');
 const ZWaveNode = require('./zwave-node');
 const SerialPort = require('serialport');
 const zwaveClassifier = require('./zwave-classifier');
+
+let Adapter;
+try {
+  Adapter = require('../adapter');
+} catch (e) {
+  if (e.code !== 'MODULE_NOT_FOUND') {
+    throw e;
+  }
+
+  Adapter = require('gateway-addon').Adapter;
+}
+
 var ZWaveModule;
 
 const DEBUG = false;

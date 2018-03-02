@@ -9,12 +9,23 @@
 
 'use strict';
 
-var Device = require('../device');
-var utils = require('../utils');
+let Device, Utils;
+try {
+  Device = require('../device');
+  Utils = require('../utils');
+} catch (e) {
+  if (e.code !== 'MODULE_NOT_FOUND') {
+    throw e;
+  }
 
-var padLeft = utils.padLeft;
-var padRight = utils.padRight;
-var repeatChar = utils.repeatChar;
+  const gwa = require('gateway-addon');
+  Device = gwa.Device;
+  Utils = gwa.Utils;
+}
+
+var padLeft = Utils.padLeft;
+var padRight = Utils.padRight;
+var repeatChar = Utils.repeatChar;
 
 let BASIC_STR = [
   '???',
