@@ -1,6 +1,6 @@
 {
   "name": "zwave-adapter",
-  "version": "0.3.2",
+  "version": "0.3.3",
   "description": "Z-Wave adapter plugin for Mozilla IoT Gateway",
   "main": "index.js",
   "keywords": [
@@ -17,6 +17,9 @@
   },
   "bugs": {
     "url": "https://github.com/mozilla-iot/zwave-adapter/issues"
+  },
+  "dependencies": {
+    "serialport": "^6.1.1"
   },
   "files": [
     "LICENSE",
