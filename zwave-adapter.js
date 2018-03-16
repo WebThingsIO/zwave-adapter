@@ -347,13 +347,27 @@ class ZWaveAdapter extends Adapter {
     this.zwave.cancelControllerCommand();
   }
 
-  // eslint-disable-next-line no-unused-vars
-  removeThing(node) {
+  /**
+   * Remove a device.
+   *
+   * @param {Object} device The device to remove.
+   * @return {Promise} which resolves to the device removed.
+   */
+  removeThing(device) {
     // ZWave can't really remove a particular thing.
     console.log('==================================================');
     console.log('Press the Exclusion button on the device to remove');
     console.log('==================================================');
     this.zwave.removeNode();
+
+    return new Promise((resolve, reject) => {
+      if (this.devices.hasOwnProperty(device.id)) {
+        this.handleDeviceRemoved(device);
+        resolve(device);
+      } else {
+        reject('Device: ' + device.id + ' not found.');
+      }
+    });
   }
 
   // eslint-disable-next-line no-unused-vars
