@@ -4,7 +4,8 @@ rm -rf node_modules
 if [ -z "${ADDON_ARCH}" ]; then
   TARFILE_SUFFIX=
 else
-  TARFILE_SUFFIX="-${ADDON_ARCH}"
+  NODE_VERSION="$(node --version)"
+  TARFILE_SUFFIX="-${ADDON_ARCH}-${NODE_VERSION/\.*/}"
 fi
 if [ "${ADDON_ARCH}" == "linux-arm" ]; then
   # We assume that CC and CXX are pointing to the cross compilers
