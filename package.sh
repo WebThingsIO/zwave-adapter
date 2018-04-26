@@ -1,5 +1,10 @@
 #!/bin/bash -e
 
+# Make the C++ symbols be backwards compatible with gcc versions
+# prior to 5.1. In particular, the openzwave library suffers
+# from this problem.
+export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+
 rm -rf node_modules
 if [ -z "${ADDON_ARCH}" ]; then
   TARFILE_SUFFIX=
