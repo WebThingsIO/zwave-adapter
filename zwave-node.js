@@ -157,6 +157,10 @@ class ZWaveNode extends Device {
       this.zwClasses.push(comClass);
     }
     this.zwValues[zwValue.value_id] = zwValue;
+    let units = '';
+    if (zwValue.units) {
+      units = ' ' + zwValue.units;
+    }
 
     let propertyFound = false;
     this.properties.forEach(property => {
@@ -164,15 +168,15 @@ class ZWaveNode extends Device {
         propertyFound = true;
         let [value, logValue] = property.parseZwValue(zwValue.value);
         property.setCachedValue(value);
-        console.log('node%d valueAdded: %s:%s property: %s = %s',
+        console.log('node%d valueAdded: %s:%s property: %s = %s%s',
                   this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
-                  property.name, logValue);
+                  property.name, logValue, units);
         }
     });
     if (!propertyFound && (zwValue.genre === 'user' || DEBUG)) {
-      console.log('node%d valueAdded: %s:%s = %s',
+      console.log('node%d valueAdded: %s:%s = %s%s',
                   this.zwInfo.nodeId, zwValue.value_id,
-                  zwValue.label, zwValue.value);
+                  zwValue.label, zwValue.value, units);
     }
     if (zwValue.genre === 'user' && !this.defaultName)  {
       // We use the label from the first 'user' value that we see to help
@@ -189,6 +193,10 @@ class ZWaveNode extends Device {
   zwValueChanged(comClass, zwValue) {
     this.lastStatus = 'value-changed';
     this.zwValues[zwValue.value_id] = zwValue;
+    let units = '';
+    if (zwValue.units) {
+      units = ' ' + zwValue.units;
+    }
 
     let propertyFound = false;
     this.properties.forEach(property => {
@@ -196,16 +204,16 @@ class ZWaveNode extends Device {
         propertyFound = true;
         let [value, logValue] = property.parseZwValue(zwValue.value);
         property.setCachedValue(value);
-        console.log('node%d valueChanged: %s:%s property: %s = %s',
+        console.log('node%d valueChanged: %s:%s property: %s = %s%s',
                     this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
-                    property.name, logValue);
+                    property.name, logValue, units);
         this.notifyPropertyChanged(property);
       }
     });
     if (!propertyFound) {
-      console.log('node%d valueChanged: %s:%s = %s',
+      console.log('node%d valueChanged: %s:%s = %s%s',
                   this.zwInfo.nodeId, zwValue.value_id,
-                  zwValue.label, zwValue.value);
+                  zwValue.label, zwValue.value, units);
     }
   }
 
@@ -215,6 +223,10 @@ class ZWaveNode extends Device {
                   comClass + '-' + instance + '-' + index;
     var zwValue = this.zwValues[valueId];
     if (zwValue) {
+      let units = '';
+      if (zwValue.units) {
+        units = ' ' + zwValue.units;
+      }
       delete this.zwValues[valueId];
       let propertyFound = false;
       this.properties.forEach(property => {
@@ -223,15 +235,15 @@ class ZWaveNode extends Device {
           let [_value, logValue] = property.parseZwValue(zwValue.value);
           delete property.valueId;
           delete property.value;
-          console.log('node%d valueRemoved: %s:%s %s property: %s = %s',
+          console.log('node%d valueRemoved: %s:%s %s property: %s = %s%s',
                       this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
-                      property.name, logValue);
+                      property.name, logValue, units);
         }
       });
       if (!propertyFound) {
-        console.log('node%d valueRemoved: %s:%s = %s',
+        console.log('node%d valueRemoved: %s:%s = %s%s',
                     this.zwInfo.nodeId, zwValue.value_id,
-                    zwValue.label, zwValue.value);
+                    zwValue.label, zwValue.value, units);
       }
     } else {
       console.log('zwValueRemoved unknown valueId:', valueId);

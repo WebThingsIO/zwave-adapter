@@ -24,6 +24,14 @@ try {
   Property = gwa.Property;
 }
 
+// Refer to ZWave document SDS13781 "Z-Wave Application Command Class
+// Specification". In the Notification Type and Event fields. These
+// constants come from the "Event" column for the "Home Security (V2)
+// section".
+const ALARM_EVENT_HOME_SECURITY_CLEAR           = 0;
+const ALARM_EVENT_HOME_SECURITY_TAMPER          = 3;
+const ALARM_EVENT_HOME_SECURITY_MOTION          = 8;
+
 class ZWaveProperty extends Property {
   constructor(device, name, propertyDescr, valueId,
               setZwValueFromValue, parseValueFromZwValue) {
@@ -66,9 +74,35 @@ class ZWaveProperty extends Property {
     return dict;
   }
 
+  parseAlarmMotionZwValue(zwData) {
+    let motion = this.value;
+    switch (zwData) {
+      case ALARM_EVENT_HOME_SECURITY_CLEAR:
+        motion = false;
+        break;
+      case ALARM_EVENT_HOME_SECURITY_MOTION:
+        motion = true;
+        break;
+    }
+    return [motion, motion.toString()];
+  }
+
+  parseAlarmTamperZwValue(zwData) {
+    let tamper = this.value;
+    switch (zwData) {
+      case ALARM_EVENT_HOME_SECURITY_CLEAR:
+        tamper = false;
+        break;
+      case ALARM_EVENT_HOME_SECURITY_TAMPER:
+        tamper = true;
+        break;
+    }
+    return [tamper, tamper.toString()];
+  }
+
   parseIdentityValue(zwData) {
     let propertyValue = zwData;
-    return [propertyValue, '' + propertyValue];
+    return [propertyValue, propertyValue.toString()];
   }
 
   parseOnOffLevelZwValue(zwData) {
@@ -100,7 +134,7 @@ class ZWaveProperty extends Property {
 
   setIdentityValue(propertyValue) {
     let zwData = propertyValue;
-    return [zwData, '' + zwData];
+    return [zwData, zwData.toString()];
   }
 
   /**
@@ -161,6 +195,21 @@ class ZWaveProperty extends Property {
       this.deferredSet = deferredSet;
     }
 
+    if (!this.valueId) {
+      deferredSet.reject('setProperty property ' + this.name +
+                        ' for node ' + this.device.id +
+                        ' doesn\'t have a valueId');
+      return deferredSet.promise;
+    }
+    let zwValue = this.device.zwValues[this.valueId];
+
+    if (zwValue.read_only) {
+      deferredSet.reject('setProperty property ' + this.name +
+                        ' for node ' + this.device.id +
+                        ' is read-only');
+      return deferredSet.promise;
+    }
+
     this.setCachedValue(propertyValue);
 
     let [zwValueData, logData] = this.setZwValueFromValue(propertyValue);
@@ -170,16 +219,9 @@ class ZWaveProperty extends Property {
                 'valueId:', this.valueId,
                 'value:', logData);
 
-    if (this.valueId) {
-      let zwValue = this.device.zwValues[this.valueId];
-      this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
-                                          zwValue.instance, zwValue.index,
-                                          zwValueData);
-    } else {
-      deferredSet.reject('setProperty property ' + this.name +
-                        ' for node ' + this.device.id +
-                        ' doesn\'t have a valueId');
-    }
+    this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
+                                        zwValue.instance, zwValue.index,
+                                        zwValueData);
     return deferredSet.promise;
   }
 }
