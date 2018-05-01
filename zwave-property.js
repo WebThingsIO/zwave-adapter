@@ -66,6 +66,32 @@ class ZWaveProperty extends Property {
     return dict;
   }
 
+  parseAlarmMotionZwValue(zwData) {
+    let motion = this.value;
+    switch (zwData) {
+      case 0:
+        motion = false;
+        break;
+      case 8:
+        motion = true;
+        break;
+    }
+    return [motion, '' + motion];
+  }
+
+  parseAlarmTamperZwValue(zwData) {
+    let tamper = this.value;
+    switch (zwData) {
+      case 0:
+        tamper = false;
+        break;
+      case 3:
+        tamper = true;
+        break;
+    }
+    return [tamper, '' + tamper];
+  }
+
   parseIdentityValue(zwData) {
     let propertyValue = zwData;
     return [propertyValue, '' + propertyValue];
@@ -161,6 +187,21 @@ class ZWaveProperty extends Property {
       this.deferredSet = deferredSet;
     }
 
+    if (!this.valueId) {
+      deferredSet.reject('setProperty property ' + this.name +
+                        ' for node ' + this.device.id +
+                        ' doesn\'t have a valueId');
+      return deferredSet.promise;
+    }
+    let zwValue = this.device.zwValues[this.valueId];
+
+    if (zwValue.read_only) {
+      deferredSet.reject('setProperty property ' + this.name +
+                        ' for node ' + this.device.id +
+                        ' is read-only');
+      return deferredSet.promise;
+    }
+
     this.setCachedValue(propertyValue);
 
     let [zwValueData, logData] = this.setZwValueFromValue(propertyValue);
@@ -170,16 +211,9 @@ class ZWaveProperty extends Property {
                 'valueId:', this.valueId,
                 'value:', logData);
 
-    if (this.valueId) {
-      let zwValue = this.device.zwValues[this.valueId];
-      this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
-                                          zwValue.instance, zwValue.index,
-                                          zwValueData);
-    } else {
-      deferredSet.reject('setProperty property ' + this.name +
-                        ' for node ' + this.device.id +
-                        ' doesn\'t have a valueId');
-    }
+    this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
+                                        zwValue.instance, zwValue.index,
+                                        zwValueData);
     return deferredSet.promise;
   }
 }

@@ -29,12 +29,16 @@ try {
 const COMMAND_CLASS_SWITCH_BINARY = 37;       // 0x25
 const COMMAND_CLASS_SWITCH_MULTILEVEL = 38;   // 0x26
 const COMMAND_CLASS_SENSOR_BINARY  = 48;      // 0x30
+const COMMAND_CLASS_SENSOR_MULTILEVEL = 49;   // 0x31
 const COMMAND_CLASS_METER = 50;               // 0x32
 //const COMMAND_CLASS_SWITCH_ALL = 39;        // 0x27
-const COMMAND_CLASS_CONFIGURATION = 112;    // 0x98
+const COMMAND_CLASS_CONFIGURATION = 112;      // 0x70
+const COMMAND_CLASS_ALARM = 113;              // 0x71
+const COMMAND_CLASS_BATTERY = 128;            // 0x80
 
 const AEOTEC_MANUFACTURER_ID = '0x0086';
-const AEOTEC_ZW096_PRODUCT_ID = '0x0060';
+const AEOTEC_ZW096_PRODUCT_ID = '0x0060'; // SmartPlug
+const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
 
 const QUIRKS = [
   {
@@ -49,7 +53,7 @@ const QUIRKS = [
   },
   {
     // The Aeotec ZW096 says it supports the MULTILEVEL command class, but
-    // setting it acts like a no-op. We remove the level property so that
+    // setting it acts like a no-op. We remove the 'level' property so that
     // the UI doesn't see it.
     zwInfo: {
       manufacturerId: AEOTEC_MANUFACTURER_ID,
@@ -57,7 +61,36 @@ const QUIRKS = [
     },
     excludeProperties: ['level'],
   },
+  {
+    // The Aeotec ZW100 says it supports the SENSOR_BINARY command class,
+    // but this is only true for some configurations. We use the alarm
+    // command class instead.
+    // We remove the 'on' property so that the UI doesn't see it.
+    zwInfo: {
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
+      productId: AEOTEC_ZW100_PRODUCT_ID,
+    },
+    excludeProperties: ['on'],
+
+    setConfigs: [
+      // Configure motion sensor to send 'Basic Set', rather than
+      // 'Binary Sensor report'.
+      {instance: 1, index: 5, value: 1}
+    ],
+  },
 ];
+
+function quirkMatches(quirk, node) {
+  let match = true;
+  for (const id in quirk.zwInfo) {
+    if (node.zwInfo[id] !== quirk.zwInfo[id]) {
+      match = false;
+      break;
+    }
+  }
+  return match;
+}
+
 
 class ZWaveClassifier {
 
@@ -65,6 +98,39 @@ class ZWaveClassifier {
   }
 
   classify(node) {
+    this.classifyInternal(node);
+
+    // Any type of device can be battery powered, so we do this check for
+    // all devices.
+    const batteryValueId = node.findValueId(COMMAND_CLASS_BATTERY, 1, 0);
+    if (batteryValueId) {
+      this.addBatteryProperty(node, batteryValueId);
+    }
+  }
+
+  classifyInternal(node) {
+    // Search through the known quirks and see if we need to apply any
+    // configurations
+    for (const quirk of QUIRKS) {
+      if (!quirk.hasOwnProperty('setConfigs')) {
+        continue;
+      }
+
+      if (quirkMatches(quirk, node)) {
+        for (const setConfig of quirk.setConfigs) {
+          console.log(`Setting device ${node.id} config ` +
+                      `instance: ${setConfig.instance}` +
+                      `index: ${setConfig.index}` +
+                      `to value: ${setConfig.value}`);
+          node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
+                                      COMMAND_CLASS_CONFIGURATION,// classId
+                                      setConfig.instance,         // instance
+                                      setConfig.index,            // index
+                                      setConfig.value);           // value
+        }
+      }
+    }
+
     const binarySwitchValueId =
       node.findValueId(COMMAND_CLASS_SWITCH_BINARY, 1, 0);
     const levelValueId =
@@ -74,7 +140,34 @@ class ZWaveClassifier {
       return;
     }
 
-    let binarySensorValueId =
+    node.type = 'thing';  // Just in case it doesn't classify as anything else
+
+    const alarmValueId = node.findValueId(COMMAND_CLASS_ALARM, 1, 10);
+    if (alarmValueId) {
+      this.addAlarmProperty(node, alarmValueId);
+    }
+
+    const temperatureValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 1);
+    if (temperatureValueId) {
+      this.addTemperatureProperty(node, temperatureValueId);
+    }
+
+    const luminanceValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 3);
+    if (luminanceValueId) {
+      this.addLuminanceProperty(node, luminanceValueId);
+    }
+
+    const humidityValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 5);
+    if (humidityValueId) {
+      this.addHumidityProperty(node, humidityValueId);
+    }
+
+    const uvValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 27);
+    if (uvValueId) {
+      this.addUltravioletProperty(node, uvValueId);
+    }
+
+    const binarySensorValueId =
       node.findValueId(COMMAND_CLASS_SENSOR_BINARY, 1, 0);
     if (binarySensorValueId) {
       this.initBinarySensor(node, binarySensorValueId);
@@ -90,15 +183,7 @@ class ZWaveClassifier {
         continue;
       }
 
-      let match = true;
-      for (const id in quirk.zwInfo) {
-        if (node.zwInfo[id] !== quirk.zwInfo[id]) {
-          match = false;
-          break;
-        }
-      }
-
-      if (match && quirk.excludeProperties.includes(name)) {
+      if (quirkMatches(quirk, node) && quirk.excludeProperties.includes(name)) {
         console.log(
           `Not adding property ${name} to device ${node.id} due to quirk.`);
         return;
@@ -109,6 +194,94 @@ class ZWaveClassifier {
                                      setZwValueFromValue,
                                      parseValueFromZwValue);
     node.properties.set(name, property);
+  }
+
+  addAlarmProperty(node, alarmValueId) {
+    this.addProperty(
+      node,
+      'motion',
+      {
+        type: 'boolean'
+      },
+      alarmValueId,
+      '',
+      'parseAlarmMotionZwValue'
+    );
+    this.addProperty(
+      node,
+      'tamper',
+      {
+        type: 'boolean'
+      },
+      alarmValueId,
+      '',
+      'parseAlarmTamperZwValue'
+    );
+  }
+
+  addBatteryProperty(node, batteryValueId) {
+    this.addProperty(
+      node,
+      'batteryLevel',
+      {
+        type: 'number',
+        unit: 'percent'
+      },
+      batteryValueId
+    );
+  }
+
+  addHumidityProperty(node, humidityValueId) {
+    this.addProperty(
+      node,
+      'humidity',
+      {
+        type: 'number',
+        unit: 'percent'
+      },
+      humidityValueId
+    );
+  }
+
+  addLuminanceProperty(node, luminanceValueId) {
+    this.addProperty(
+      node,
+      'luminance',
+      {
+        type: 'number',
+        unit: 'lux'
+      },
+      luminanceValueId
+    );
+  }
+
+  addTemperatureProperty(node, temperatureValueId) {
+    let descr = {
+      type: 'number'
+    };
+    const zwValue = node.zwValues[temperatureValueId];
+    if (zwValue.units == 'F') {
+      descr.unit = 'farenheit';
+    } else if (zwValue.units == 'C') {
+      descr.unit = 'celsius';
+    }
+    this.addProperty(
+      node,
+      'temperature',
+      descr,
+      temperatureValueId
+    );
+  }
+
+  addUltravioletProperty(node, uvValueId) {
+    this.addProperty(
+      node,
+      'uvIndex',
+      {
+        type: 'number',
+      },
+      uvValueId
+    );
   }
 
   initSwitch(node, binarySwitchValueId, levelValueId) {
@@ -234,7 +407,9 @@ class ZWaveClassifier {
   }
 
   initBinarySensor(node, binarySensorValueId) {
-    node.type = Constants.THING_TYPE_BINARY_SENSOR;
+    if (node.properties.size == 0) {
+      node.type = Constants.THING_TYPE_BINARY_SENSOR;
+    }
     this.addProperty(
       node,                     // node
       'on',                     // name
@@ -243,6 +418,10 @@ class ZWaveClassifier {
       },
       binarySensorValueId       // valueId
     );
+
+    if (node.type == 'thing' && node.name == node.defaultName) {
+      node.name = node.id + '-thing';
+    }
   }
 }
 
