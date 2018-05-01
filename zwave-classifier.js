@@ -40,6 +40,49 @@ const AEOTEC_MANUFACTURER_ID = '0x0086';
 const AEOTEC_ZW096_PRODUCT_ID = '0x0060'; // SmartPlug
 const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
 
+// From cpp/src/command_classes/SwitchMultilevel.cpp
+// The code uses "_data[5]+3" for the index.
+//
+// Refer to ZWave document SDS13781 "Z-Wave Application Command Class
+// Specification". In the Notification Type and Event fields. The
+// notification type of "Home Security" has a Notification Type of 7,
+// which means it will be reported as an index of 10 (due to the +3
+// mentioned above).
+const ALARM_INDEX_HOME_SECURITY                   = 10;
+
+// This would be from Battery.cpp, but it only has a single index.
+const BATTERY_INDEX_LEVEL                         = 0;
+
+// Refer to ZWave document SDS13781 "Z-Wave Application Command Class
+// Specification", Table 67 - Meter Table Capability Report.
+// These constants are the bit number times 4.
+const METER_INDEX_ELECTRIC_INSTANT_POWER          = 8;  // Bit 2
+const METER_INDEX_ELECTRIC_INSTANT_VOLTAGE        = 16; // Bit 3
+const METER_INDEX_ELECTRIC_INSTANT_CURRENT        = 20; // Bit 5
+
+// This would be from SensorBinary.cpp, but it only has a single index.
+const SENSOR_BINARY_INDEX_SENSOR                  = 0;
+
+// From the SensorType enum in OpenZWave:
+//    cpp/src/command_classes/SensorMultilevel.cpp#L50
+//
+// Note: These constants are specific to the OpenZWave library and not
+//       part of the ZWave specification.
+const SENSOR_MULTILEVEL_INDEX_TEMPERATURE         = 1;
+const SENSOR_MULTILEVEL_INDEX_LUMINANCE           = 3;
+const SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY   = 5;
+const SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET         = 27;
+
+// This would be from SwitchBinary.cpp, but it only has a single index.
+const SWITCH_BINARY_INDEX_SWITCH                  = 0;
+
+// From the SwitchMultilevelIndex enum in OpenZWave:
+//    cpp/src/command_classes/SwitchMultilevel.cpp
+//
+// Note: These constants are specific to the OpenZWave library and not
+//       part of the ZWave specification.
+const SWITCH_MULTILEVEL_INDEX_LEVEL               = 0;
+
 const QUIRKS = [
   {
     // The Aeotec devices don't seem to notify on current changes, only on
@@ -102,7 +145,10 @@ class ZWaveClassifier {
 
     // Any type of device can be battery powered, so we do this check for
     // all devices.
-    const batteryValueId = node.findValueId(COMMAND_CLASS_BATTERY, 1, 0);
+    const batteryValueId =
+      node.findValueId(COMMAND_CLASS_BATTERY,
+                       1,
+                       BATTERY_INDEX_LEVEL);
     if (batteryValueId) {
       this.addBatteryProperty(node, batteryValueId);
     }
@@ -132,9 +178,13 @@ class ZWaveClassifier {
     }
 
     const binarySwitchValueId =
-      node.findValueId(COMMAND_CLASS_SWITCH_BINARY, 1, 0);
+      node.findValueId(COMMAND_CLASS_SWITCH_BINARY,
+                       1,
+                       SWITCH_BINARY_INDEX_SWITCH);
     const levelValueId =
-      node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL, 1, 0);
+      node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL,
+                       1,
+                       SWITCH_MULTILEVEL_INDEX_LEVEL);
     if (binarySwitchValueId || levelValueId) {
       this.initSwitch(node, binarySwitchValueId, levelValueId);
       return;
@@ -142,33 +192,50 @@ class ZWaveClassifier {
 
     node.type = 'thing';  // Just in case it doesn't classify as anything else
 
-    const alarmValueId = node.findValueId(COMMAND_CLASS_ALARM, 1, 10);
+    const alarmValueId =
+      node.findValueId(COMMAND_CLASS_ALARM,
+                       1,
+                       ALARM_INDEX_HOME_SECURITY);
     if (alarmValueId) {
       this.addAlarmProperty(node, alarmValueId);
     }
 
-    const temperatureValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 1);
+    const temperatureValueId =
+      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_TEMPERATURE);
     if (temperatureValueId) {
       this.addTemperatureProperty(node, temperatureValueId);
     }
 
-    const luminanceValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 3);
+    const luminanceValueId =
+      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_LUMINANCE);
     if (luminanceValueId) {
       this.addLuminanceProperty(node, luminanceValueId);
     }
 
-    const humidityValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 5);
+    const humidityValueId =
+      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY);
     if (humidityValueId) {
       this.addHumidityProperty(node, humidityValueId);
     }
 
-    const uvValueId = node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL, 1, 27);
+    const uvValueId =
+      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
     }
 
     const binarySensorValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_BINARY, 1, 0);
+      node.findValueId(COMMAND_CLASS_SENSOR_BINARY,
+                       1,
+                       SENSOR_BINARY_INDEX_SENSOR);
     if (binarySensorValueId) {
       this.initBinarySensor(node, binarySensorValueId);
       return;
@@ -260,9 +327,9 @@ class ZWaveClassifier {
       type: 'number'
     };
     const zwValue = node.zwValues[temperatureValueId];
-    if (zwValue.units == 'F') {
+    if (zwValue.units === 'F') {
       descr.unit = 'farenheit';
-    } else if (zwValue.units == 'C') {
+    } else if (zwValue.units === 'C') {
       descr.unit = 'celsius';
     }
     this.addProperty(
@@ -339,7 +406,10 @@ class ZWaveClassifier {
       );
     }
 
-    let powerValueId = node.findValueId(COMMAND_CLASS_METER, 1, 8);
+    let powerValueId =
+      node.findValueId(COMMAND_CLASS_METER,
+                       1,
+                       METER_INDEX_ELECTRIC_INSTANT_POWER);
     if (powerValueId) {
       node.type = Constants.THING_TYPE_SMART_PLUG;
       this.addProperty(
@@ -353,7 +423,10 @@ class ZWaveClassifier {
       );
     }
 
-    let voltageValueId = node.findValueId(COMMAND_CLASS_METER, 1, 16);
+    let voltageValueId =
+      node.findValueId(COMMAND_CLASS_METER,
+                       1,
+                       METER_INDEX_ELECTRIC_INSTANT_VOLTAGE);
     if (voltageValueId) {
       node.type = Constants.THING_TYPE_SMART_PLUG;
       this.addProperty(
@@ -367,7 +440,10 @@ class ZWaveClassifier {
       );
     }
 
-    let currentValueId = node.findValueId(COMMAND_CLASS_METER, 1, 20);
+    let currentValueId =
+      node.findValueId(COMMAND_CLASS_METER,
+                       1,
+                       METER_INDEX_ELECTRIC_INSTANT_CURRENT);
     if (currentValueId) {
       node.type = Constants.THING_TYPE_SMART_PLUG;
       this.addProperty(
@@ -419,7 +495,7 @@ class ZWaveClassifier {
       binarySensorValueId       // valueId
     );
 
-    if (node.type == 'thing' && node.name == node.defaultName) {
+    if (node.type === 'thing' && node.name == node.defaultName) {
       node.name = node.id + '-thing';
     }
   }

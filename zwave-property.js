@@ -24,6 +24,14 @@ try {
   Property = gwa.Property;
 }
 
+// Refer to ZWave document SDS13781 "Z-Wave Application Command Class
+// Specification". In the Notification Type and Event fields. These
+// constants come from the "Event" column for the "Home Security (V2)
+// section".
+const ALARM_EVENT_HOME_SECURITY_CLEAR           = 0;
+const ALARM_EVENT_HOME_SECURITY_TAMPER          = 3;
+const ALARM_EVENT_HOME_SECURITY_MOTION          = 8;
+
 class ZWaveProperty extends Property {
   constructor(device, name, propertyDescr, valueId,
               setZwValueFromValue, parseValueFromZwValue) {
@@ -69,32 +77,32 @@ class ZWaveProperty extends Property {
   parseAlarmMotionZwValue(zwData) {
     let motion = this.value;
     switch (zwData) {
-      case 0:
+      case ALARM_EVENT_HOME_SECURITY_CLEAR:
         motion = false;
         break;
-      case 8:
+      case ALARM_EVENT_HOME_SECURITY_MOTION:
         motion = true;
         break;
     }
-    return [motion, '' + motion];
+    return [motion, motion.toString()];
   }
 
   parseAlarmTamperZwValue(zwData) {
     let tamper = this.value;
     switch (zwData) {
-      case 0:
+      case ALARM_EVENT_HOME_SECURITY_CLEAR:
         tamper = false;
         break;
-      case 3:
+      case ALARM_EVENT_HOME_SECURITY_TAMPER:
         tamper = true;
         break;
     }
-    return [tamper, '' + tamper];
+    return [tamper, tamper.toString()];
   }
 
   parseIdentityValue(zwData) {
     let propertyValue = zwData;
-    return [propertyValue, '' + propertyValue];
+    return [propertyValue, propertyValue.toString()];
   }
 
   parseOnOffLevelZwValue(zwData) {
@@ -126,7 +134,7 @@ class ZWaveProperty extends Property {
 
   setIdentityValue(propertyValue) {
     let zwData = propertyValue;
-    return [zwData, '' + zwData];
+    return [zwData, zwData.toString()];
   }
 
   /**
