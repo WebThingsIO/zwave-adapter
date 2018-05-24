@@ -84,6 +84,9 @@ class ZWaveProperty extends Property {
         motion = true;
         break;
     }
+    if (typeof motion === 'undefined') {
+      motion = false;
+    }
     return [motion, motion.toString()];
   }
 
@@ -96,6 +99,9 @@ class ZWaveProperty extends Property {
       case ALARM_EVENT_HOME_SECURITY_TAMPER:
         tamper = true;
         break;
+    }
+    if (typeof tamper === 'undefined') {
+      tamper = false;
     }
     return [tamper, tamper.toString()];
   }
