@@ -84,7 +84,7 @@ class ZWaveProperty extends Property {
         motion = true;
         break;
     }
-    if (motion === undefined) {
+    if (typeof motion === 'undefined') {
       motion = false;
     }
     return [motion, motion.toString()];
@@ -100,7 +100,7 @@ class ZWaveProperty extends Property {
         tamper = true;
         break;
     }
-    if (tamper === undefined) {
+    if (typeof tamper === 'undefined') {
       tamper = false;
     }
     return [tamper, tamper.toString()];
