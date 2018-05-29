@@ -23,16 +23,16 @@ try {
   Utils = gwa.Utils;
 }
 
-var padLeft = Utils.padLeft;
-var padRight = Utils.padRight;
-var repeatChar = Utils.repeatChar;
+const padLeft = Utils.padLeft;
+const padRight = Utils.padRight;
+const repeatChar = Utils.repeatChar;
 
-let BASIC_STR = [
+const BASIC_STR = [
   '???',
   'Controller',
   'StaticController',
   'Slave',
-  'RoutingSlave'
+  'RoutingSlave',
 ];
 
 const DEBUG = false;
@@ -43,7 +43,7 @@ class ZWaveNode extends Device {
     // Our nodeId is a number from 1-255 and is only unique within
     // the ZWave controller. So we extend this by appending the node id
     // to the controller id and use that as the device's id.
-    var deviceId = adapter.id.toString(16) + '-' + nodeId;
+    const deviceId = `${adapter.id.toString(16)}-${nodeId}`;
     super(adapter, deviceId);
 
     this.zwInfo = {
@@ -66,7 +66,7 @@ class ZWaveNode extends Device {
   }
 
   asDict() {
-    var dict = super.asDict();
+    const dict = super.asDict();
     dict.lastStatus = this.lastStatus;
     dict.zwInfo = this.zwInfo;
     dict.zwClasses = this.zwClasses;
@@ -88,18 +88,18 @@ class ZWaveNode extends Device {
    *                   undefined if no valueId was found.
    */
   findValueId(commandClass, instance, index) {
-    for (var valueId in this.zwValues) {
+    for (const valueId in this.zwValues) {
       const value = this.zwValues[valueId];
       if (value.class_id == commandClass &&
-          (typeof(instance) === 'undefined' || value.instance == instance) &&
-          (typeof(index) === 'undefined' || value.index == index)) {
+          (typeof instance === 'undefined' || value.instance == instance) &&
+          (typeof index === 'undefined' || value.index == index)) {
         return valueId;
       }
     }
   }
 
   findPropertyFromValueId(valueId) {
-    for (var property of this.properties.values()) {
+    for (const property of this.properties.values()) {
       if (property.valueId == valueId) {
         return property;
       }
@@ -107,7 +107,7 @@ class ZWaveNode extends Device {
   }
 
   notifyPropertyChanged(property) {
-    var deferredSet = property.deferredSet;
+    const deferredSet = property.deferredSet;
     if (deferredSet) {
       property.deferredSet = null;
       deferredSet.resolve(property.value);
@@ -117,38 +117,29 @@ class ZWaveNode extends Device {
 
   static oneLineHeader(line) {
     if (line === 0) {
-      return 'Node LastStat ' +
-        padRight('Basic Type', 16) + ' ' +
-        padRight('Type', 24) + ' ' +
-        padRight('Product Name', 50) + ' ' +
-        padRight('Name', 30) + ' ' +
-        'Location';
+      return `Node LastStat ${padRight('Basic Type', 16)} ${
+        padRight('Type', 24)} ${padRight('Product Name', 50)} ${
+        padRight('Name', 30)} Location`;
     }
-    return repeatChar('-', 4) + ' ' +
-      repeatChar('-', 8) + ' ' +
-      repeatChar('-', 16) + ' ' +
-      repeatChar('-', 24) + ' ' +
-      repeatChar('-', 50) + ' ' +
-      repeatChar('-', 30) + ' ' +
-      repeatChar('-', 30);
+    return `${repeatChar('-', 4)} ${repeatChar('-', 8)} ${
+      repeatChar('-', 16)} ${repeatChar('-', 24)} ${repeatChar('-', 50)} ${
+      repeatChar('-', 30)} ${repeatChar('-', 30)}`;
   }
 
   oneLineSummary() {
-    var nodeId = this.zwInfo.nodeId;
-    var zwave = this.adapter.zwave;
+    const nodeId = this.zwInfo.nodeId;
+    const zwave = this.adapter.zwave;
 
-    var basic = zwave.getNodeBasic(nodeId);
-    var basicStr = (basic >= 1 && basic < BASIC_STR.length) ?
-                    BASIC_STR[basic] :
-                    '??? ' + basic + ' ???';
+    const basic = zwave.getNodeBasic(nodeId);
+    const basicStr =
+      (basic >= 1 && basic < BASIC_STR.length) ?
+        BASIC_STR[basic] :
+        `??? ${basic} ???`;
 
-    return padLeft(nodeId, 3) + ': ' +
-           padRight(this.lastStatus, 8) + ' ' +
-           padRight(basicStr, 16) + ' ' +
-           padRight(this.zwInfo.type, 24) + ' ' +
-           padRight(this.zwInfo.product, 50) + ' ' +
-           padRight(this.name, 30) + ' ' +
-           this.zwInfo.location;
+    return `${padLeft(nodeId, 3)}: ${padRight(this.lastStatus, 8)} ${
+      padRight(basicStr, 16)} ${padRight(this.zwInfo.type, 24)} ${
+      padRight(this.zwInfo.product, 50)} ${padRight(this.name, 30)} ${
+      this.zwInfo.location}`;
   }
 
   zwValueAdded(comClass, zwValue) {
@@ -159,29 +150,29 @@ class ZWaveNode extends Device {
     this.zwValues[zwValue.value_id] = zwValue;
     let units = '';
     if (zwValue.units) {
-      units = ' ' + zwValue.units;
+      units = ` ${zwValue.units}`;
     }
 
     let propertyFound = false;
-    this.properties.forEach(property => {
+    this.properties.forEach((property) => {
       if (property.valueId == zwValue.value_id) {
         propertyFound = true;
-        let [value, logValue] = property.parseZwValue(zwValue.value);
+        const [value, logValue] = property.parseZwValue(zwValue.value);
         property.setCachedValue(value);
         console.log('node%d valueAdded: %s:%s property: %s = %s%s',
-                  this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
-                  property.name, logValue, units);
-        }
+                    this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
+                    property.name, logValue, units);
+      }
     });
     if (!propertyFound && (zwValue.genre === 'user' || DEBUG)) {
       console.log('node%d valueAdded: %s:%s = %s%s',
                   this.zwInfo.nodeId, zwValue.value_id,
                   zwValue.label, zwValue.value, units);
     }
-    if (zwValue.genre === 'user' && !this.defaultName)  {
+    if (zwValue.genre === 'user' && !this.defaultName) {
       // We use the label from the first 'user' value that we see to help
       // disambiguate different nodes.
-      this.defaultName = this.id + '-' + zwValue.label;
+      this.defaultName = `${this.id}-${zwValue.label}`;
 
       // Assign a name if we don't yet have one.
       if (!this.name) {
@@ -195,14 +186,14 @@ class ZWaveNode extends Device {
     this.zwValues[zwValue.value_id] = zwValue;
     let units = '';
     if (zwValue.units) {
-      units = ' ' + zwValue.units;
+      units = ` ${zwValue.units}`;
     }
 
     let propertyFound = false;
-    this.properties.forEach(property => {
+    this.properties.forEach((property) => {
       if (property.valueId == zwValue.value_id) {
         propertyFound = true;
-        let [value, logValue] = property.parseZwValue(zwValue.value);
+        const [value, logValue] = property.parseZwValue(zwValue.value);
         property.setCachedValue(value);
         console.log('node%d valueChanged: %s:%s property: %s = %s%s',
                     this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
@@ -219,20 +210,19 @@ class ZWaveNode extends Device {
 
   zwValueRemoved(comClass, instance, index) {
     this.lastStatus = 'value-removed';
-    var valueId = this.zwInfo.nodeId + '-' +
-                  comClass + '-' + instance + '-' + index;
-    var zwValue = this.zwValues[valueId];
+    const valueId = `${this.zwInfo.nodeId}-${comClass}-${instance}-${index}`;
+    const zwValue = this.zwValues[valueId];
     if (zwValue) {
       let units = '';
       if (zwValue.units) {
-        units = ' ' + zwValue.units;
+        units = ` ${zwValue.units}`;
       }
       delete this.zwValues[valueId];
       let propertyFound = false;
-      this.properties.forEach(property => {
+      this.properties.forEach((property) => {
         if (property.valueId == zwValue.value_id) {
           propertyFound = true;
-          let [_value, logValue] = property.parseZwValue(zwValue.value);
+          const [_value, logValue] = property.parseZwValue(zwValue.value);
           delete property.valueId;
           delete property.value;
           console.log('node%d valueRemoved: %s:%s %s property: %s = %s%s',

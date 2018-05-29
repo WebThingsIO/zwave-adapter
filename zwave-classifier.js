@@ -28,10 +28,10 @@ try {
 
 const COMMAND_CLASS_SWITCH_BINARY = 37;       // 0x25
 const COMMAND_CLASS_SWITCH_MULTILEVEL = 38;   // 0x26
-const COMMAND_CLASS_SENSOR_BINARY  = 48;      // 0x30
+const COMMAND_CLASS_SENSOR_BINARY = 48;       // 0x30
 const COMMAND_CLASS_SENSOR_MULTILEVEL = 49;   // 0x31
 const COMMAND_CLASS_METER = 50;               // 0x32
-//const COMMAND_CLASS_SWITCH_ALL = 39;        // 0x27
+// const COMMAND_CLASS_SWITCH_ALL = 39;       // 0x27
 const COMMAND_CLASS_CONFIGURATION = 112;      // 0x70
 const COMMAND_CLASS_ALARM = 113;              // 0x71
 const COMMAND_CLASS_BATTERY = 128;            // 0x80
@@ -48,40 +48,40 @@ const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
 // notification type of "Home Security" has a Notification Type of 7,
 // which means it will be reported as an index of 10 (due to the +3
 // mentioned above).
-const ALARM_INDEX_HOME_SECURITY                   = 10;
+const ALARM_INDEX_HOME_SECURITY = 10;
 
 // This would be from Battery.cpp, but it only has a single index.
-const BATTERY_INDEX_LEVEL                         = 0;
+const BATTERY_INDEX_LEVEL = 0;
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification", Table 67 - Meter Table Capability Report.
 // These constants are the bit number times 4.
-const METER_INDEX_ELECTRIC_INSTANT_POWER          = 8;  // Bit 2
-const METER_INDEX_ELECTRIC_INSTANT_VOLTAGE        = 16; // Bit 3
-const METER_INDEX_ELECTRIC_INSTANT_CURRENT        = 20; // Bit 5
+const METER_INDEX_ELECTRIC_INSTANT_POWER = 8;    // Bit 2
+const METER_INDEX_ELECTRIC_INSTANT_VOLTAGE = 16; // Bit 3
+const METER_INDEX_ELECTRIC_INSTANT_CURRENT = 20; // Bit 5
 
 // This would be from SensorBinary.cpp, but it only has a single index.
-const SENSOR_BINARY_INDEX_SENSOR                  = 0;
+const SENSOR_BINARY_INDEX_SENSOR = 0;
 
 // From the SensorType enum in OpenZWave:
 //    cpp/src/command_classes/SensorMultilevel.cpp#L50
 //
 // Note: These constants are specific to the OpenZWave library and not
 //       part of the ZWave specification.
-const SENSOR_MULTILEVEL_INDEX_TEMPERATURE         = 1;
-const SENSOR_MULTILEVEL_INDEX_LUMINANCE           = 3;
-const SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY   = 5;
-const SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET         = 27;
+const SENSOR_MULTILEVEL_INDEX_TEMPERATURE = 1;
+const SENSOR_MULTILEVEL_INDEX_LUMINANCE = 3;
+const SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY = 5;
+const SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET = 27;
 
 // This would be from SwitchBinary.cpp, but it only has a single index.
-const SWITCH_BINARY_INDEX_SWITCH                  = 0;
+const SWITCH_BINARY_INDEX_SWITCH = 0;
 
 // From the SwitchMultilevelIndex enum in OpenZWave:
 //    cpp/src/command_classes/SwitchMultilevel.cpp
 //
 // Note: These constants are specific to the OpenZWave library and not
 //       part of the ZWave specification.
-const SWITCH_MULTILEVEL_INDEX_LEVEL               = 0;
+const SWITCH_MULTILEVEL_INDEX_LEVEL = 0;
 
 const QUIRKS = [
   {
@@ -118,7 +118,7 @@ const QUIRKS = [
     setConfigs: [
       // Configure motion sensor to send 'Basic Set', rather than
       // 'Binary Sensor report'.
-      {instance: 1, index: 5, value: 1}
+      {instance: 1, index: 5, value: 1},
     ],
   },
 ];
@@ -136,10 +136,6 @@ function quirkMatches(quirk, node) {
 
 
 class ZWaveClassifier {
-
-  constructor() {
-  }
-
   classify(node) {
     this.classifyInternal(node);
 
@@ -168,11 +164,11 @@ class ZWaveClassifier {
                       `instance: ${setConfig.instance}` +
                       `index: ${setConfig.index}` +
                       `to value: ${setConfig.value}`);
-          node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
-                                      COMMAND_CLASS_CONFIGURATION,// classId
-                                      setConfig.instance,         // instance
-                                      setConfig.index,            // index
-                                      setConfig.value);           // value
+          node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
+                                      COMMAND_CLASS_CONFIGURATION, // classId
+                                      setConfig.instance,          // instance
+                                      setConfig.index,             // index
+                                      setConfig.value);            // value
         }
       }
     }
@@ -238,7 +234,6 @@ class ZWaveClassifier {
                        SENSOR_BINARY_INDEX_SENSOR);
     if (binarySensorValueId) {
       this.initBinarySensor(node, binarySensorValueId);
-      return;
     }
   }
 
@@ -257,9 +252,9 @@ class ZWaveClassifier {
       }
     }
 
-    let property = new ZWaveProperty(node, name, descr, valueId,
-                                     setZwValueFromValue,
-                                     parseValueFromZwValue);
+    const property = new ZWaveProperty(node, name, descr, valueId,
+                                       setZwValueFromValue,
+                                       parseValueFromZwValue);
     node.properties.set(name, property);
   }
 
@@ -268,7 +263,7 @@ class ZWaveClassifier {
       node,
       'motion',
       {
-        type: 'boolean'
+        type: 'boolean',
       },
       alarmValueId,
       '',
@@ -278,7 +273,7 @@ class ZWaveClassifier {
       node,
       'tamper',
       {
-        type: 'boolean'
+        type: 'boolean',
       },
       alarmValueId,
       '',
@@ -292,7 +287,7 @@ class ZWaveClassifier {
       'batteryLevel',
       {
         type: 'number',
-        unit: 'percent'
+        unit: 'percent',
       },
       batteryValueId
     );
@@ -304,7 +299,7 @@ class ZWaveClassifier {
       'humidity',
       {
         type: 'number',
-        unit: 'percent'
+        unit: 'percent',
       },
       humidityValueId
     );
@@ -316,15 +311,15 @@ class ZWaveClassifier {
       'luminance',
       {
         type: 'number',
-        unit: 'lux'
+        unit: 'lux',
       },
       luminanceValueId
     );
   }
 
   addTemperatureProperty(node, temperatureValueId) {
-    let descr = {
-      type: 'number'
+    const descr = {
+      type: 'number',
     };
     const zwValue = node.zwValues[temperatureValueId];
     if (zwValue.units === 'F') {
@@ -358,7 +353,7 @@ class ZWaveClassifier {
         node,                     // node
         'on',                     // name
         {                         // property decscription
-          type: 'boolean'
+          type: 'boolean',
         },
         binarySwitchValueId       // valueId
       );
@@ -385,7 +380,7 @@ class ZWaveClassifier {
         node,                     // node
         'on',                     // name
         {                         // property decscription
-          type: 'boolean'
+          type: 'boolean',
         },
         levelValueId,             // valueId
         'setOnOffLevelValue',     // setZwValueFromValue
@@ -406,7 +401,7 @@ class ZWaveClassifier {
       );
     }
 
-    let powerValueId =
+    const powerValueId =
       node.findValueId(COMMAND_CLASS_METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_POWER);
@@ -423,7 +418,7 @@ class ZWaveClassifier {
       );
     }
 
-    let voltageValueId =
+    const voltageValueId =
       node.findValueId(COMMAND_CLASS_METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_VOLTAGE);
@@ -440,7 +435,7 @@ class ZWaveClassifier {
       );
     }
 
-    let currentValueId =
+    const currentValueId =
       node.findValueId(COMMAND_CLASS_METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_CURRENT);
@@ -460,24 +455,24 @@ class ZWaveClassifier {
     // TODO: add this data into the quirks
     if (node.zwInfo.manufacturer === 'Aeotec') {
       // When the user presses the button, tell us about it
-      node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
-                                  COMMAND_CLASS_CONFIGURATION,// classId
-                                  1,                          // instance
-                                  80,                         // index
-                                  'Basic');                   // value
+      node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
+                                  COMMAND_CLASS_CONFIGURATION, // classId
+                                  1,                           // instance
+                                  80,                          // index
+                                  'Basic');                    // value
       if (node.type === Constants.THING_TYPE_SMART_PLUG) {
         // Enable METER reporting
-        node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
-                                    COMMAND_CLASS_CONFIGURATION,// classId
-                                    1,                          // instance
-                                    90,                         // index
-                                    1);                         // value
+        node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
+                                    COMMAND_CLASS_CONFIGURATION, // classId
+                                    1,                           // instance
+                                    90,                          // index
+                                    1);                          // value
         // Report changes of 1 watt
-        node.adapter.zwave.setValue(node.zwInfo.nodeId,         // nodeId
-                                    COMMAND_CLASS_CONFIGURATION,// classId
-                                    1,                          // instance
-                                    91,                         // index
-                                    1);                         // value
+        node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
+                                    COMMAND_CLASS_CONFIGURATION, // classId
+                                    1,                           // instance
+                                    91,                          // index
+                                    1);                          // value
       }
     }
   }
@@ -490,13 +485,13 @@ class ZWaveClassifier {
       node,                     // node
       'on',                     // name
       {                         // property decscription
-        type: 'boolean'
+        type: 'boolean',
       },
       binarySensorValueId       // valueId
     );
 
     if (node.type === 'thing' && node.name == node.defaultName) {
-      node.name = node.id + '-thing';
+      node.name = `${node.id}-thing`;
     }
   }
 }
