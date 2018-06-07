@@ -26,7 +26,7 @@ try {
   Adapter = require('gateway-addon').Adapter;
 }
 
-var ZWaveModule;
+let ZWaveModule;
 
 const DEBUG = false;
 
@@ -85,8 +85,8 @@ class ZWaveAdapter extends Adapter {
   }
 
   asDict() {
-    var dict = super.asDict();
-    var node1 = this.nodes[1];
+    const dict = super.asDict();
+    const node1 = this.nodes[1];
     if (node1) {
       this.node1 = node1.asDict();
     }
@@ -97,8 +97,8 @@ class ZWaveAdapter extends Adapter {
     console.log(this.oneLineSummary());
     console.log(ZWaveNode.oneLineHeader(0));
     console.log(ZWaveNode.oneLineHeader(1));
-    for (var nodeId in this.nodes) {
-      let node = this.nodes[nodeId];
+    for (const nodeId in this.nodes) {
+      const node = this.nodes[nodeId];
       console.log(node.oneLineSummary());
     }
     console.log('----');
@@ -107,13 +107,11 @@ class ZWaveAdapter extends Adapter {
   controllerCommand(nodeId, retVal, state, msg) {
     console.log('Controller Command feedback: %s node%d retVal:%d ' +
                 'state:%d', msg, nodeId, retVal, state);
-
-
   }
 
   driverReady(homeId) {
     console.log('Driver Ready: HomeId:', homeId.toString(16));
-    this.id = 'zwave-' + homeId.toString(16);
+    this.id = `zwave-${homeId.toString(16)}`;
 
     this.manager.addAdapter(this);
   }
@@ -167,17 +165,17 @@ class ZWaveAdapter extends Adapter {
     // Pass in the empty string as a name here. Once the node is initialized
     // (i.e. nodeReady) then if the user has assigned a name, we'll get
     // that name.
-    let node = new ZWaveNode(this, nodeId, '');
+    const node = new ZWaveNode(this, nodeId, '');
     this.nodes[nodeId] = node;
     this.nodesBeingAdded[nodeId] = node;
     node.lastStatus = 'added';
   }
 
   nodeNaming(nodeId, nodeInfo) {
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.lastStatus = 'named';
-      var zwInfo = node.zwInfo;
+      const zwInfo = node.zwInfo;
       zwInfo.location = nodeInfo.loc;
       zwInfo.manufacturer = nodeInfo.manufacturer;
       zwInfo.manufacturerId = nodeInfo.manufacturerid;
@@ -187,7 +185,7 @@ class ZWaveAdapter extends Adapter {
       zwInfo.type = nodeInfo.type;
 
       if (zwInfo.product.startsWith('Unknown: ')) {
-        zwInfo.product = zwInfo.manufacturer + ' ' + zwInfo.product;
+        zwInfo.product = `${zwInfo.manufacturer} ${zwInfo.product}`;
       }
 
       if (nodeInfo.name) {
@@ -202,23 +200,25 @@ class ZWaveAdapter extends Adapter {
       }
 
       if (DEBUG || !node.named) {
-        console.log('node%d: Named',
-                    nodeId,
-                    zwInfo.manufacturer ? zwInfo.manufacturer :
-                                          'id=' + zwInfo.manufacturerId,
-                    zwInfo.product ? zwInfo.product :
-                                   'product=' + zwInfo.productId +
-                                   ', type=' + zwInfo.productType);
+        console.log(
+          'node%d: Named',
+          nodeId,
+          zwInfo.manufacturer ?
+            zwInfo.manufacturer :
+            `id=${zwInfo.manufacturerId}`,
+          zwInfo.product ?
+            zwInfo.product :
+            `product=${zwInfo.productId}, type=${zwInfo.productType}`);
         console.log('node%d: name="%s", type="%s", location="%s"',
                     zwInfo.nodeId, node.name, zwInfo.type, zwInfo.location);
       }
       node.named = true;
 
       if (DEBUG) {
-        for (var comClass in node.zwClasses) {
-          var zwClass = node.zwClasses[comClass];
+        for (const comClass in node.zwClasses) {
+          const zwClass = node.zwClasses[comClass];
           console.log('node%d: class %d', nodeId, comClass);
-          for (var idx in zwClass) {
+          for (const idx in zwClass) {
             console.log('node%d:   %s=%s',
                         nodeId, zwClass[idx].label, zwClass[idx].value);
           }
@@ -232,7 +232,7 @@ class ZWaveAdapter extends Adapter {
       console.log('node%d removed', nodeId);
     }
 
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.lastStatus = 'removed';
       this.handleDeviceRemoved(node);
@@ -245,12 +245,12 @@ class ZWaveAdapter extends Adapter {
 
   // eslint-disable-next-line no-unused-vars
   nodeReady(nodeId, nodeInfo) {
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.lastStatus = 'ready';
       node.ready = true;
 
-      for (var comClass in node.zwClasses) {
+      for (const comClass in node.zwClasses) {
         switch (comClass) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
@@ -266,8 +266,8 @@ class ZWaveAdapter extends Adapter {
 
   // eslint-disable-next-line no-unused-vars
   nodeNotification(nodeId, notif, help) {
-    var node = this.nodes[nodeId];
-    var lastStatus;
+    const node = this.nodes[nodeId];
+    let lastStatus;
     switch (notif) {
       case 0:
         console.log('node%d: message complete', nodeId);
@@ -306,7 +306,7 @@ class ZWaveAdapter extends Adapter {
   }
 
   oneLineSummary() {
-    return 'Controller: ' + this.id + ' Path: ' + this.port.comName;
+    return `Controller: ${this.id} Path: ${this.port.comName}`;
   }
 
   sceneEvent(nodeId, sceneId) {
@@ -314,21 +314,21 @@ class ZWaveAdapter extends Adapter {
   }
 
   valueAdded(nodeId, comClass, value) {
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.zwValueAdded(comClass, value);
     }
   }
 
   valueChanged(nodeId, comClass, value) {
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.zwValueChanged(comClass, value);
     }
   }
 
   valueRemoved(nodeId, comClass, valueInstance, valueIndex) {
-    var node = this.nodes[nodeId];
+    const node = this.nodes[nodeId];
     if (node) {
       node.zwValueRemoved(comClass, valueInstance, valueIndex);
     }
@@ -365,7 +365,7 @@ class ZWaveAdapter extends Adapter {
         this.handleDeviceRemoved(device);
         resolve(device);
       } else {
-        reject('Device: ' + device.id + ' not found.');
+        reject(`Device: ${device.id} not found.`);
       }
     });
   }
@@ -406,11 +406,11 @@ function isZWavePort(port) {
 //        Upon failure, callback is invoked as callback(err) instead.
 //
 function findZWavePort(callback) {
-  SerialPort.list(function listPortsCallback (error, ports) {
+  SerialPort.list(function listPortsCallback(error, ports) {
     if (error) {
       callback(error);
     }
-    for (var port of ports) {
+    for (const port of ports) {
       // Under OSX, SerialPort.list returns the /dev/tty.usbXXX instead
       // /dev/cu.usbXXX. tty.usbXXX requires DCD to be asserted which
       // isn't necessarily the case for ZWave dongles. The cu.usbXXX
@@ -435,7 +435,7 @@ function loadZWaveAdapters(addonManager, manifest, errorCallback) {
     return;
   }
 
-  findZWavePort(function (error, port) {
+  findZWavePort(function(error, port) {
     if (error) {
       errorCallback(manifest.name, 'Unable to find ZWave adapter');
       return;

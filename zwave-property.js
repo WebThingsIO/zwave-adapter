@@ -28,9 +28,9 @@ try {
 // Specification". In the Notification Type and Event fields. These
 // constants come from the "Event" column for the "Home Security (V2)
 // section".
-const ALARM_EVENT_HOME_SECURITY_CLEAR           = 0;
-const ALARM_EVENT_HOME_SECURITY_TAMPER          = 3;
-const ALARM_EVENT_HOME_SECURITY_MOTION          = 8;
+const ALARM_EVENT_HOME_SECURITY_CLEAR = 0;
+const ALARM_EVENT_HOME_SECURITY_TAMPER = 3;
+const ALARM_EVENT_HOME_SECURITY_MOTION = 8;
 
 class ZWaveProperty extends Property {
   constructor(device, name, propertyDescr, valueId,
@@ -44,7 +44,7 @@ class ZWaveProperty extends Property {
     }
     this.setZwValueFromValue = Object.getPrototypeOf(this)[setZwValueFromValue];
     if (!this.setZwValueFromValue) {
-      let err = 'Unknown function: ' + setZwValueFromValue;
+      const err = `Unknown function: ${setZwValueFromValue}`;
       console.error(err);
       throw err;
     }
@@ -55,20 +55,20 @@ class ZWaveProperty extends Property {
     this.parseValueFromZwValue =
       Object.getPrototypeOf(this)[parseValueFromZwValue];
     if (!this.parseValueFromZwValue) {
-      let err = 'Unknown function: ' + parseValueFromZwValue;
+      const err = `Unknown function: ${parseValueFromZwValue}`;
       console.error(err);
       throw err;
     }
 
-    var zwValue = device.zwValues[valueId];
+    const zwValue = device.zwValues[valueId];
     if (zwValue) {
-      let [value, _logValue] = this.parseValueFromZwValue(zwValue.value);
+      const [value, _logValue] = this.parseValueFromZwValue(zwValue.value);
       this.value = value;
     }
   }
 
   asDict() {
-    var dict = super.asDict();
+    const dict = super.asDict();
     dict.valueId = this.valueId;
     dict.value = this.value;
     return dict;
@@ -107,17 +107,17 @@ class ZWaveProperty extends Property {
   }
 
   parseIdentityValue(zwData) {
-    let propertyValue = zwData;
+    const propertyValue = zwData;
     return [propertyValue, propertyValue.toString()];
   }
 
   parseOnOffLevelZwValue(zwData) {
     // For devices (like the Aeotec ZW099) which support level but don't
     // support on/off we fake on/off
-    let ret = this.parseLevelZwValue(zwData);
+    const ret = this.parseLevelZwValue(zwData);
     if (this.name === 'on') {
-      let value = this.level > 0;
-      return [value, '' + value];
+      const value = this.level > 0;
+      return [value, `${value}`];
     }
     return ret;
   }
@@ -130,7 +130,7 @@ class ZWaveProperty extends Property {
     }
     return [
       percent,
-      percent.toFixed(1) + '% (zw: ' + this.level + ')'
+      `${percent.toFixed(1)}% (zw: ${this.level})`,
     ];
   }
 
@@ -139,7 +139,7 @@ class ZWaveProperty extends Property {
   }
 
   setIdentityValue(propertyValue) {
-    let zwData = propertyValue;
+    const zwData = propertyValue;
     return [zwData, zwData.toString()];
   }
 
@@ -169,7 +169,7 @@ class ZWaveProperty extends Property {
    * and 100% as the same.
    */
   setLevelValue(percent) {
-    if (typeof(percent) !== 'number') {
+    if (typeof percent !== 'number') {
       console.error('setLevelValue passed a non-numeric percentage:',
                     percent, '- ignoring');
       return;
@@ -184,7 +184,7 @@ class ZWaveProperty extends Property {
 
     return [
       this.level,
-      'zw: ' + this.level + ' (' + percent.toFixed(1) + '%)'
+      `zw: ${this.level} (${percent.toFixed(1)}%)`,
     ];
   }
 
@@ -195,30 +195,30 @@ class ZWaveProperty extends Property {
    * the value passed in.
    */
   setValue(propertyValue) {
-    var deferredSet = this.deferredSet;
+    let deferredSet = this.deferredSet;
     if (!deferredSet) {
       deferredSet = new Deferred();
       this.deferredSet = deferredSet;
     }
 
     if (!this.valueId) {
-      deferredSet.reject('setProperty property ' + this.name +
-                        ' for node ' + this.device.id +
-                        ' doesn\'t have a valueId');
+      deferredSet.reject(
+        `setProperty property ${this.name} for node ${this.device.id
+        } doesn't have a valueId`);
       return deferredSet.promise;
     }
-    let zwValue = this.device.zwValues[this.valueId];
+    const zwValue = this.device.zwValues[this.valueId];
 
     if (zwValue.read_only) {
-      deferredSet.reject('setProperty property ' + this.name +
-                        ' for node ' + this.device.id +
-                        ' is read-only');
+      deferredSet.reject(
+        `setProperty property ${this.name} for node ${this.device.id
+        } is read-only`);
       return deferredSet.promise;
     }
 
     this.setCachedValue(propertyValue);
 
-    let [zwValueData, logData] = this.setZwValueFromValue(propertyValue);
+    const [zwValueData, logData] = this.setZwValueFromValue(propertyValue);
 
     console.log('setProperty property:', this.name,
                 'for:', this.device.name,
@@ -226,8 +226,8 @@ class ZWaveProperty extends Property {
                 'value:', logData);
 
     this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
-                                        zwValue.instance, zwValue.index,
-                                        zwValueData);
+                                       zwValue.instance, zwValue.index,
+                                       zwValueData);
     return deferredSet.promise;
   }
 }
