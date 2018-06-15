@@ -182,7 +182,36 @@ class ZWaveClassifier {
                        1,
                        SWITCH_MULTILEVEL_INDEX_LEVEL);
     if (binarySwitchValueId || levelValueId) {
-      this.initSwitch(node, binarySwitchValueId, levelValueId);
+      // Check to see if this is a switch with multiple outlets.
+      let inst = 2;
+      let switchCount = 0;
+      let suffix = '';
+      // eslint-disable-next-line no-constant-condition
+      while (true) {
+        const bsValueId =
+          node.findValueId(COMMAND_CLASS_SWITCH_BINARY,
+                           inst,
+                           SWITCH_BINARY_INDEX_SWITCH);
+        const lvlValueId =
+          node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL,
+                           inst,
+                           SWITCH_MULTILEVEL_INDEX_LEVEL);
+        if (bsValueId || lvlValueId) {
+          switchCount += 1;
+          if (switchCount > 1) {
+            suffix = switchCount.toString();
+          }
+          this.initSwitch(node, bsValueId, lvlValueId, suffix);
+          inst += 1;
+        } else {
+          break;
+        }
+      }
+      if (switchCount > 0) {
+        return;
+      }
+
+      this.initSwitch(node, binarySwitchValueId, levelValueId, '');
       return;
     }
 
@@ -346,22 +375,30 @@ class ZWaveClassifier {
     );
   }
 
-  initSwitch(node, binarySwitchValueId, levelValueId) {
+  initSwitch(node, binarySwitchValueId, levelValueId, suffix) {
     if (binarySwitchValueId) {
-      node.type = Constants.THING_TYPE_ON_OFF_SWITCH;
+      if (suffix) {
+        // Until we have the capabilities system, in order for the UI
+        // to display the second switch, we need to call it a thing.
+        node.type = 'thing';
+      } else {
+        node.type = Constants.THING_TYPE_ON_OFF_SWITCH;
+      }
       this.addProperty(
         node,                     // node
-        'on',                     // name
+        `on${suffix}`,            // name
         {                         // property decscription
           type: 'boolean',
         },
         binarySwitchValueId       // valueId
       );
       if (levelValueId) {
-        node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+        if (!suffix) {
+          node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+        }
         this.addProperty(
           node,                   // node
-          'level',                // name
+          `level${suffix}`,       // name
           {                       // property decscription
             type: 'number',
             unit: 'percent',
@@ -375,10 +412,12 @@ class ZWaveClassifier {
       }
     } else {
       // For switches which don't support the on/off we fake it using level
-      node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+      if (!suffix) {
+        node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+      }
       this.addProperty(
         node,                     // node
-        'on',                     // name
+        `on${suffix}`,            // name
         {                         // property decscription
           type: 'boolean',
         },
@@ -388,7 +427,7 @@ class ZWaveClassifier {
       );
       this.addProperty(
         node,                   // node
-        'level',                // name
+        `level${suffix}`,       // name
         {                       // property decscription
           type: 'number',
           unit: 'percent',
@@ -406,10 +445,12 @@ class ZWaveClassifier {
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_POWER);
     if (powerValueId) {
-      node.type = Constants.THING_TYPE_SMART_PLUG;
+      if (!suffix) {
+        node.type = Constants.THING_TYPE_SMART_PLUG;
+      }
       this.addProperty(
         node,                   // node
-        'instantaneousPower',   // name
+        `instantaneousPower${suffix}`, // name
         {                       // property decscription
           type: 'number',
           unit: 'watt',
@@ -423,10 +464,12 @@ class ZWaveClassifier {
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_VOLTAGE);
     if (voltageValueId) {
-      node.type = Constants.THING_TYPE_SMART_PLUG;
+      if (!suffix) {
+        node.type = Constants.THING_TYPE_SMART_PLUG;
+      }
       this.addProperty(
         node,                   // node
-        'voltage',              // name
+        `voltage${suffix}`,     // name
         {                       // property decscription
           type: 'number',
           unit: 'volt',
@@ -440,10 +483,12 @@ class ZWaveClassifier {
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_CURRENT);
     if (currentValueId) {
-      node.type = Constants.THING_TYPE_SMART_PLUG;
+      if (!suffix) {
+        node.type = Constants.THING_TYPE_SMART_PLUG;
+      }
       this.addProperty(
         node,                   // node
-        'current',              // name
+        `current${suffix}`,     // name
         {                       // property decscription
           type: 'number',
           unit: 'ampere',
