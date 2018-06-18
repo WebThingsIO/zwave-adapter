@@ -1,9 +1,12 @@
 {
   "name": "zwave-adapter",
-  "version": "0.4.1",
+  "version": "0.4.2",
   "description": "Z-Wave adapter plugin for Mozilla IoT Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
+  "scripts": {
+    "lint": "eslint ."
+  },
   "keywords": [
     "mozilla",
     "iot",
@@ -24,7 +27,9 @@
     "serialport": "^6.1.1"
   },
   "devDependencies": {
-    "eslint": "^4.19.1"
+    "babel-eslint": "^8.2.3",
+    "eslint": "^4.19.1",
+    "eslint-plugin-html": "^4.0.3"
   },
   "files": [
     "LICENSE",
