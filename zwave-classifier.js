@@ -292,6 +292,8 @@ class ZWaveClassifier {
       node,
       'motion',
       {
+        '@type': 'BooleanProperty',
+        label: 'Motion',
         type: 'boolean',
       },
       alarmValueId,
@@ -302,6 +304,8 @@ class ZWaveClassifier {
       node,
       'tamper',
       {
+        '@type': 'BooleanProperty',
+        label: 'Tamper',
         type: 'boolean',
       },
       alarmValueId,
@@ -315,7 +319,11 @@ class ZWaveClassifier {
       node,
       'batteryLevel',
       {
+        '@type': 'LevelProperty',
+        label: 'Battery',
         type: 'number',
+        minimum: 0,
+        maximum: 100,
         unit: 'percent',
       },
       batteryValueId
@@ -327,7 +335,11 @@ class ZWaveClassifier {
       node,
       'humidity',
       {
+        '@type': 'LevelProperty',
+        label: 'Humidity',
         type: 'number',
+        minimum: 0,
+        maximum: 100,
         unit: 'percent',
       },
       humidityValueId
@@ -339,6 +351,8 @@ class ZWaveClassifier {
       node,
       'luminance',
       {
+        // TODO: add proper @type
+        label: 'Luminance',
         type: 'number',
         unit: 'lux',
       },
@@ -348,6 +362,8 @@ class ZWaveClassifier {
 
   addTemperatureProperty(node, temperatureValueId) {
     const descr = {
+      // TODO: add proper @type
+      label: 'Temperature',
       type: 'number',
     };
     const zwValue = node.zwValues[temperatureValueId];
@@ -369,6 +385,8 @@ class ZWaveClassifier {
       node,
       'uvIndex',
       {
+        // TODO: add proper @type
+        label: 'UV Index',
         type: 'number',
       },
       uvValueId
@@ -376,6 +394,8 @@ class ZWaveClassifier {
   }
 
   initSwitch(node, binarySwitchValueId, levelValueId, suffix) {
+    node['@type'] = ['OnOffSwitch'];
+
     if (binarySwitchValueId) {
       if (suffix) {
         // Until we have the capabilities system, in order for the UI
@@ -388,6 +408,8 @@ class ZWaveClassifier {
         node,                     // node
         `on${suffix}`,            // name
         {                         // property decscription
+          '@type': suffix ? 'BooleanProperty' : 'OnOffProperty',
+          label: suffix ? `On/Off (${suffix})` : 'On/Off',
           type: 'boolean',
         },
         binarySwitchValueId       // valueId
@@ -395,15 +417,18 @@ class ZWaveClassifier {
       if (levelValueId) {
         if (!suffix) {
           node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+          node['@type'].push('MultiLevelSwitch');
         }
         this.addProperty(
           node,                   // node
           `level${suffix}`,       // name
           {                       // property decscription
+            '@type': suffix ? '' : 'LevelProperty',
+            label: suffix ? `Level (${suffix})` : 'Level',
             type: 'number',
             unit: 'percent',
-            min: 0,
-            max: 100,
+            minimum: 0,
+            maximum: 100,
           },
           levelValueId,           // valueId
           'setLevelValue',        // setZwValueFromValue
@@ -414,11 +439,14 @@ class ZWaveClassifier {
       // For switches which don't support the on/off we fake it using level
       if (!suffix) {
         node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
+        node['@type'].push('MultiLevelSwitch');
       }
       this.addProperty(
         node,                     // node
         `on${suffix}`,            // name
         {                         // property decscription
+          '@type': suffix ? 'BooleanProperty' : 'OnOffProperty',
+          label: suffix ? `On/Off (${suffix})` : 'On/Off',
           type: 'boolean',
         },
         levelValueId,             // valueId
@@ -429,10 +457,12 @@ class ZWaveClassifier {
         node,                   // node
         `level${suffix}`,       // name
         {                       // property decscription
+          '@type': suffix ? '' : 'LevelProperty',
+          label: suffix ? `Level (${suffix})` : 'Level',
           type: 'number',
           unit: 'percent',
-          min: 0,
-          max: 100,
+          minimum: 0,
+          maximum: 100,
         },
         levelValueId,           // valueId
         'setOnOffLevelValue',   // setZwValueFromValue
@@ -447,11 +477,14 @@ class ZWaveClassifier {
     if (powerValueId) {
       if (!suffix) {
         node.type = Constants.THING_TYPE_SMART_PLUG;
+        node['@type'].push('SmartPlug', 'EnergyMonitor');
       }
       this.addProperty(
         node,                   // node
         `instantaneousPower${suffix}`, // name
         {                       // property decscription
+          '@type': suffix ? '' : 'InstantaneousPowerProperty',
+          label: suffix ? `Power (${suffix})` : 'Power',
           type: 'number',
           unit: 'watt',
         },
@@ -471,6 +504,8 @@ class ZWaveClassifier {
         node,                   // node
         `voltage${suffix}`,     // name
         {                       // property decscription
+          '@type': suffix ? '' : 'VoltageProperty',
+          label: suffix ? `Voltage (${suffix})` : 'Voltage',
           type: 'number',
           unit: 'volt',
         },
@@ -490,6 +525,8 @@ class ZWaveClassifier {
         node,                   // node
         `current${suffix}`,     // name
         {                       // property decscription
+          '@type': suffix ? '' : 'CurrentProperty',
+          label: suffix ? `Current (${suffix})` : 'Current',
           type: 'number',
           unit: 'ampere',
         },
@@ -525,11 +562,13 @@ class ZWaveClassifier {
   initBinarySensor(node, binarySensorValueId) {
     if (node.properties.size == 0) {
       node.type = Constants.THING_TYPE_BINARY_SENSOR;
+      node['@type'] = ['BinarySensor'];
     }
     this.addProperty(
       node,                     // node
       'on',                     // name
       {                         // property decscription
+        '@type': 'BooleanProperty',
         type: 'boolean',
       },
       binarySensorValueId       // valueId
