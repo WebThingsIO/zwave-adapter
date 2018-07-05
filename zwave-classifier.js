@@ -182,10 +182,15 @@ class ZWaveClassifier {
                        1,
                        SWITCH_MULTILEVEL_INDEX_LEVEL);
     if (binarySwitchValueId || levelValueId) {
+      // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
+      // 1 and 2, and don't seem to work on instance 2. So we always
+      // use instance 1 for the first outlet, and then 3 and beyond for the
+      // second and beyond outlets.
+      this.initSwitch(node, binarySwitchValueId, levelValueId, '');
+
       // Check to see if this is a switch with multiple outlets.
-      let inst = 2;
-      let switchCount = 0;
-      let suffix = '';
+      let inst = 3;
+      let switchCount = 1;
       // eslint-disable-next-line no-constant-condition
       while (true) {
         const bsValueId =
@@ -198,20 +203,12 @@ class ZWaveClassifier {
                            SWITCH_MULTILEVEL_INDEX_LEVEL);
         if (bsValueId || lvlValueId) {
           switchCount += 1;
-          if (switchCount > 1) {
-            suffix = switchCount.toString();
-          }
-          this.initSwitch(node, bsValueId, lvlValueId, suffix);
+          this.initSwitch(node, bsValueId, lvlValueId, switchCount.toString());
           inst += 1;
         } else {
           break;
         }
       }
-      if (switchCount > 0) {
-        return;
-      }
-
-      this.initSwitch(node, binarySwitchValueId, levelValueId, '');
       return;
     }
 
