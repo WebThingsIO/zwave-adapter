@@ -56,7 +56,6 @@
     "schema": {
       "type": "object",
       "required": [
-        "networkKey"
       ],
       "properties": {
         "networkKey": {
