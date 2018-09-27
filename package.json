@@ -49,6 +49,21 @@
     },
     "enabled": true,
     "plugin": true,
-    "exec": "{nodeLoader} {path}"
+    "exec": "{nodeLoader} {path}",
+    "config": {
+      "networkKey": ""
+    },
+    "schema": {
+      "type": "object",
+      "required": [
+        "networkKey"
+      ],
+      "properties": {
+        "networkKey": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    }
   }
 }
