@@ -388,14 +388,45 @@ class ZWaveAdapter extends Adapter {
 }
 
 function isZWavePort(port) {
+  /**
+   * The popular HUSBZB-1 adapter contains ZWave AND Zigbee radios. With the
+   * most recent drivers from SiLabs, the radios are likely to enumerate in the
+   * following order with the following names:
+   *
+   * /dev/tty.GoControl_zigbee
+   * /dev/tty.GoControl_zwave
+   *
+   * Since `i` comes before `w` when the devices are listed, it's common for the
+   * Zigbee radio to be returned as the ZWave radio. We need to scrutinize the
+   * comName of the radio to ensure that we're returning the actual ZWave one.
+   */
+  const isHUSBZB1 = port.vendorId == '10c4' && port.productId == '8a2a';
+  if (isHUSBZB1) {
+    const isGoControl = port.comName.indexOf('GoControl') >= 0;
+    if (isGoControl) {
+      return port.comName.indexOf('zwave') >= 0;
+    }
+
+    /**
+     * There is also a chance the radios show up with more typical names, if
+     * they're not using the latest drivers:
+     *
+     * /dev/ttyUSB0
+     * /dev/ttyUSB1
+     *
+     * For now, since there's no good way to distinguish one radio from the
+     * other with these names, and since this configuration was previously
+     * valid below, return true.
+     */
+    return true;
+  }
+
   return ((port.vendorId == '0658' &&
            port.productId == '0200') ||  // Aeotec Z-Stick Gen-5
           (port.vendorId == '0658' &&
            port.productId == '0280') ||  // UZB1
           (port.vendorId == '10c4' &&
-           port.productId == 'ea60') ||  // Aeotec Z-Stick S2
-          (port.vendorId == '10c4' &&
-           port.productId == '8a2a'));   // Nortek Security & Control HUSBZB-1
+           port.productId == 'ea60'));   // Aeotec Z-Stick S2
 }
 
 // Scan the serial ports looking for an OpenZWave adapter.
