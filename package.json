@@ -60,7 +60,7 @@
       "properties": {
         "networkKey": {
           "type": "string",
-          "default": ""
+          "description": "16-byte, comma-separated hex string (0xb4,0xc9,etc...)"
         }
       }
     }
