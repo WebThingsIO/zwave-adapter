@@ -86,8 +86,14 @@ class ZWaveAdapter extends Adapter {
     const networkKey = adapterManifest.moziot.config.networkKey;
 
     if (networkKey) {
-      console.log('Found NetworkKey, initializing with support for Security Devices'); // eslint-disable-line max-len
-      zWaveModuleOptions.NetworkKey = networkKey;
+      // A regex to validate the required network key format shown above
+      const networkKeyRegex = /^(?:0x[abcdef\d]{2},){15}(?:0x[abcdef\d]{2}){1}$/; // eslint-disable-line max-len
+      if (networkKeyRegex.test(networkKey)) {
+        console.info('Found NetworkKey, initializing with support for Security Devices'); // eslint-disable-line max-len
+        zWaveModuleOptions.NetworkKey = networkKey;
+      } else {
+        console.warn('Found NetworkKey, but invalid format. Ignoring'); // eslint-disable-line max-len
+      }
     }
 
     this.zwave = new ZWaveModule(zWaveModuleOptions);
