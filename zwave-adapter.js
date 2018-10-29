@@ -250,11 +250,11 @@ class ZWaveAdapter extends Adapter {
       node.lastStatus = 'ready';
       node.ready = true;
 
-      for (const comClass in node.zwClasses) {
-        switch (comClass) {
+      for (const prop of node.properties) {
+        switch (node.zwValues[prop.valueId].class_id) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
-            this.zwave.enablePoll(nodeId, comClass);
+            this.zwave.enablePoll({valueId: prop.valueId});
             break;
         }
       }
