@@ -49,6 +49,20 @@
     },
     "enabled": true,
     "plugin": true,
-    "exec": "{nodeLoader} {path}"
+    "exec": "{nodeLoader} {path}",
+    "config": {
+      "networkKey": ""
+    },
+    "schema": {
+      "type": "object",
+      "required": [
+      ],
+      "properties": {
+        "networkKey": {
+          "type": "string",
+          "description": "16-byte, comma-separated hex string (0xb4,0xc9,etc...)"
+        }
+      }
+    }
   }
 }

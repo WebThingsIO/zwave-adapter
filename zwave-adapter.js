@@ -27,6 +27,9 @@ try {
 }
 
 let ZWaveModule;
+// This will get set to the contents of package.json within loadZWaveAdapters(),
+// at which point we can reference config values in the `moziot` section
+let adapterManifest;
 
 const DEBUG = false;
 
@@ -61,11 +64,39 @@ class ZWaveAdapter extends Adapter {
       }
     }
 
-    this.zwave = new ZWaveModule({
+    const zWaveModuleOptions = {
       SaveConfiguration: true,
       ConsoleOutput: false,
       UserPath: logDir,
-    });
+    };
+
+    /* eslint-disable max-len */
+    /**
+     * node-openzwave-shared allows for a cryptographic "network key" to be set
+     * to enable adding devices using ZWave's "security mode" support. The key
+     * is specified as a string containing a 16-byte hex sequence:
+     *
+     * Ex: "0xf7,0xf4,0x95,0xfb,0x81,0x83,0xa2,0xca,0x4e,0xe0,0x75,0x07,0x05,0x51,0x16,0x01"
+     *
+     * DO NOT USE THE ABOVE KEY, IT IS ONLY THERE AS AN EXAMPLE!
+     *
+     * A key can be specified by clicking Configure on this add-on in Gateway.
+     */
+    /* eslint-enable max-len */
+    const networkKey = adapterManifest.moziot.config.networkKey;
+
+    if (networkKey) {
+      // A regex to validate the required network key format shown above
+      const networkKeyRegex = /^(?:0x[abcdef\d]{2},){15}(?:0x[abcdef\d]{2}){1}$/; // eslint-disable-line max-len
+      if (networkKeyRegex.test(networkKey)) {
+        console.info('Found NetworkKey, initializing with support for Security Devices'); // eslint-disable-line max-len
+        zWaveModuleOptions.NetworkKey = networkKey;
+      } else {
+        console.warn('Found NetworkKey, but invalid format. Ignoring'); // eslint-disable-line max-len
+      }
+    }
+
+    this.zwave = new ZWaveModule(zWaveModuleOptions);
     this.zwave.on('controller command', this.controllerCommand.bind(this));
     this.zwave.on('driver ready', this.driverReady.bind(this));
     this.zwave.on('driver failed', this.driverFailed.bind(this));
@@ -428,6 +459,8 @@ function findZWavePort(callback) {
 }
 
 function loadZWaveAdapters(addonManager, manifest, errorCallback) {
+  adapterManifest = manifest;
+
   try {
     ZWaveModule = require('openzwave-shared');
   } catch (err) {
