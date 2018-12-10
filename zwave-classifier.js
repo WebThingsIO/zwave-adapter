@@ -264,7 +264,7 @@ class ZWaveClassifier {
                        1,
                        CENTRAL_SCENE_COUNT);
     if (centralSceneValueId) {
-      this.initCentralScene(node, centralSceneValueId);
+      this.initCentralScene(node);
     }
   }
 
@@ -403,7 +403,7 @@ class ZWaveClassifier {
     );
   }
 
-  initCentralScene(node, centralSceneValueId) {
+  initCentralScene(node) {
     node['@type'] = ['OnOffSwitch', 'MultiLevelSwitch', 'PushButton'];
     node.name = `${node.id}-button`;
 
