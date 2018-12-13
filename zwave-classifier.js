@@ -12,16 +12,7 @@
 
 const ZWaveProperty = require('./zwave-property');
 
-let Constants;
-try {
-  Constants = require('../addon-constants');
-} catch (e) {
-  if (e.code !== 'MODULE_NOT_FOUND') {
-    throw e;
-  }
-
-  Constants = require('gateway-addon').Constants;
-}
+const {Constants} = require('gateway-addon');
 
 // See; http://wiki.micasaverde.com/index.php/ZWave_Command_Classes for a
 // complete list of command classes.
@@ -32,6 +23,7 @@ const COMMAND_CLASS_SENSOR_BINARY = 48;       // 0x30
 const COMMAND_CLASS_SENSOR_MULTILEVEL = 49;   // 0x31
 const COMMAND_CLASS_METER = 50;               // 0x32
 // const COMMAND_CLASS_SWITCH_ALL = 39;       // 0x27
+const COMMAND_CLASS_CENTRAL_SCENE = 91;       // 0x5b
 const COMMAND_CLASS_CONFIGURATION = 112;      // 0x70
 const COMMAND_CLASS_ALARM = 113;              // 0x71
 const COMMAND_CLASS_BATTERY = 128;            // 0x80
@@ -52,6 +44,11 @@ const ALARM_INDEX_HOME_SECURITY = 10;
 
 // This would be from Battery.cpp, but it only has a single index.
 const BATTERY_INDEX_LEVEL = 0;
+
+// From cpp/src/command_classes/CentralScene.cpp#L51
+const CENTRAL_SCENE_COUNT = 0;
+const CENTRAL_SCENE_1 = 1;
+const CENTRAL_SCENE_2 = 2;
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification", Table 67 - Meter Table Capability Report.
@@ -261,6 +258,20 @@ class ZWaveClassifier {
     if (binarySensorValueId) {
       this.initBinarySensor(node, binarySensorValueId);
     }
+
+    const centralSceneValueId =
+      node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
+                       1,
+                       CENTRAL_SCENE_COUNT);
+    if (centralSceneValueId) {
+      this.initCentralScene(node);
+    }
+  }
+
+  addEvents(node, events) {
+    for (const eventName in events) {
+      node.addEvent(eventName, events[eventName]);
+    }
   }
 
   addProperty(node, name, descr, valueId,
@@ -282,6 +293,7 @@ class ZWaveClassifier {
                                        setZwValueFromValue,
                                        parseValueFromZwValue);
     node.properties.set(name, property);
+    return property;
   }
 
   addAlarmProperty(node, alarmValueId) {
@@ -322,6 +334,7 @@ class ZWaveClassifier {
         minimum: 0,
         maximum: 100,
         unit: 'percent',
+        readOnly: true,
       },
       batteryValueId
     );
@@ -387,6 +400,92 @@ class ZWaveClassifier {
         type: 'number',
       },
       uvValueId
+    );
+  }
+
+  initCentralScene(node) {
+    node['@type'] = ['OnOffSwitch', 'MultiLevelSwitch', 'PushButton'];
+    node.name = `${node.id}-button`;
+
+    node.centralSceneOnProperty = this.addCentralSceneOnProperty(node);
+    node.centralSceneLevelProperty = this.addCentralSceneLevelProperty(node);
+
+    node.centralSceneOnProperty.value = false;
+    node.centralSceneLevelProperty.value = 0;
+
+    this.addCentralSceneButton(node, CENTRAL_SCENE_1);
+    this.addCentralSceneButton(node, CENTRAL_SCENE_2);
+  }
+
+  addCentralSceneButton(node, buttonNum) {
+    const valueId = node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
+                                     1,
+                                     buttonNum);
+    const buttonProperty = this.addProperty(node,
+                                            `_button${buttonNum}`,
+                                            {
+                                              '@type': 'number',
+                                              readOnly: true,
+                                            },
+                                            valueId);
+    buttonProperty.buttonNum = buttonNum;
+
+    buttonProperty.updated = function() {
+      node.handleCentralSceneButton(buttonProperty);
+    };
+
+    let buttonLabel = `${buttonNum}`;
+    switch (buttonNum) {
+      case 1:
+        buttonLabel = 'Top';
+        break;
+      case 2:
+        buttonLabel = 'Bottom';
+        break;
+    }
+    this.addEvents(node, {
+      [`${buttonNum}-pressed`]: {
+        '@type': 'PressedEvent',
+        description: `${buttonLabel} button pressed and released quickly`,
+      },
+      [`${buttonNum}-released`]: {
+        '@type': 'ReleasedEvent',
+        description: `${buttonLabel} button released after being held`,
+      },
+      [`${buttonNum}-longPressed`]: {
+        '@type': 'LongPressedEvent',
+        description: `${buttonLabel} button pressed and held`,
+      },
+    });
+  }
+
+  addCentralSceneOnProperty(node) {
+    return this.addProperty(
+      node,                     // node
+      'on',                     // name
+      {                         // property decscription
+        '@type': 'BooleanProperty',
+        type: 'boolean',
+        readOnly: true,
+      },
+      null                      // valueId
+    );
+  }
+
+  addCentralSceneLevelProperty(node) {
+    return this.addProperty(
+      node,                   // node
+      `level`,                // name
+      {                       // property decscription
+        '@type': 'LevelProperty',
+        label: 'Level',
+        type: 'number',
+        unit: 'percent',
+        minimum: 0,
+        maximum: 100,
+        readOnly: true,
+      },
+      null                    // valueId
     );
   }
 

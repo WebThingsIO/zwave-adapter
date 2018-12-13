@@ -282,6 +282,9 @@ class ZWaveAdapter extends Adapter {
       node.ready = true;
 
       for (const property of node.properties.values()) {
+        if (!property.valueId) {
+          continue;
+        }
         switch (node.zwValues[property.valueId].class_id) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL

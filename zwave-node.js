@@ -9,19 +9,7 @@
 
 'use strict';
 
-let Device, Utils;
-try {
-  Device = require('../device');
-  Utils = require('../utils');
-} catch (e) {
-  if (e.code !== 'MODULE_NOT_FOUND') {
-    throw e;
-  }
-
-  const gwa = require('gateway-addon');
-  Device = gwa.Device;
-  Utils = gwa.Utils;
-}
+const {Device, Event, Utils} = require('gateway-addon');
 
 const padLeft = Utils.padLeft;
 const padRight = Utils.padRight;
@@ -74,6 +62,31 @@ class ZWaveNode extends Device {
     return dict;
   }
 
+  centralSceneLevelTimerCallback(property, delta) {
+    let newValue = Math.round(property.value + delta);
+    newValue = Math.max(0, newValue);
+    newValue = Math.min(100, newValue);
+
+    DEBUG && console.log('centralSceneLevelTimerCallback:',
+                         `node${this.zwInfo.nodeId}`,
+                         'property:', property.name,
+                         'value:', property.value,
+                         'delta:', delta,
+                         'newValue:', newValue);
+
+    // Cancel the timer if we don't need it any more.
+    if ((newValue == property.value) ||
+        (newValue == 0 && delta < 0) ||
+        (newValue == 100 && delta > 0)) {
+      this.handleCentralSceneButtonStopCommand(property);
+    }
+
+    // Update the value, if it changed
+    if (newValue != property.value) {
+      this.setPropertyValue(property, newValue);
+    }
+  }
+
   /**
    * @method findValueId
    *
@@ -106,6 +119,78 @@ class ZWaveNode extends Device {
     }
   }
 
+  handleCentralSceneButton(buttonProperty) {
+    DEBUG && console.log(`handleCentralSceneButton: node${this.zwInfo.nodeId}:`,
+                         'value:', buttonProperty.value);
+    switch (buttonProperty.value) {
+      case 0:   // pressed & released (short press)
+        if (buttonProperty.buttonNum == 1) {
+          this.setPropertyValue(this.centralSceneOnProperty, true);
+        } else if (buttonProperty.buttonNum == 2) {
+          this.setPropertyValue(this.centralSceneOnProperty, false);
+        }
+        this.notifyEvent(`${buttonProperty.buttonNum}-pressed`);
+        break;
+      case 1:   // released (long press)
+        this.handleCentralSceneButtonStopCommand(
+          this.centralSceneLevelProperty);
+        this.notifyEvent(`${buttonProperty.buttonNum}-released`);
+        break;
+      case 2: { // long pressed
+        const moveDir = buttonProperty.buttonNum == 1 ? 1 : -1;
+        this.handleCentralSceneButtonMoveCommand(
+          this.centralSceneLevelProperty, moveDir);
+        this.notifyEvent(`${buttonProperty.buttonNum}-longPressed`);
+        break;
+      }
+    }
+  }
+
+  handleCentralSceneButtonMoveCommand(property, moveDir) {
+    DEBUG && console.log('handleCentralSceneButtonMoveCommand:',
+                         `node${this.zwInfo.nodeId}`,
+                         'property:', property.name,
+                         'moveDir:', moveDir);
+    // moveDir: 1 = up, -1 = down
+
+    if (property.moveTimer) {
+      // There's already a timer running.
+      return;
+    }
+
+    const updatesPerSecond = 4;
+    const delta = moveDir * 10;
+
+    this.centralSceneLevelTimerCallback(property, delta);
+    if ((property.value > 0 && delta < 0) ||
+        (property.value < 100 && delta > 0)) {
+      // We haven't hit the end, setup a timer to move towards it.
+      property.moveTimer = setInterval(
+        this.centralSceneLevelTimerCallback.bind(this),
+        1000 / updatesPerSecond,
+        property, delta);
+    }
+  }
+
+  handleCentralSceneButtonStopCommand(property) {
+    DEBUG && console.log('handleCentralSceneButtonStopCommand:',
+                         `node${this.zwInfo.nodeId}`,
+                         'property:', property.name);
+    if (property.moveTimer) {
+      clearInterval(property.moveTimer);
+      property.moveTimer = null;
+    }
+  }
+
+  notifyEvent(eventName, eventData) {
+    if (eventData) {
+      console.log(this.name, 'event:', eventName, 'data:', eventData);
+    } else {
+      console.log(this.name, 'event:', eventName);
+    }
+    this.eventNotify(new Event(this, eventName, eventData));
+  }
+
   notifyPropertyChanged(property) {
     const deferredSet = property.deferredSet;
     if (deferredSet) {
@@ -113,6 +198,10 @@ class ZWaveNode extends Device {
       deferredSet.resolve(property.value);
     }
     super.notifyPropertyChanged(property);
+
+    if (property.hasOwnProperty('updated')) {
+      property.updated();
+    }
   }
 
   static oneLineHeader(line) {
@@ -140,6 +229,15 @@ class ZWaveNode extends Device {
       padRight(basicStr, 16)} ${padRight(this.zwInfo.type, 24)} ${
       padRight(this.zwInfo.product, 50)} ${padRight(this.name, 30)} ${
       this.zwInfo.location}`;
+  }
+
+  // Used to set properties which don't have an associated valueId
+  setPropertyValue(property, value) {
+    property.setCachedValue(value);
+    const units = property.units || '';
+    console.log('node%d setPropertyValue: %s = %s%s',
+                this.zwInfo.nodeId, property.name, value, units);
+    this.notifyPropertyChanged(property);
   }
 
   zwValueAdded(comClass, zwValue) {
@@ -202,7 +300,7 @@ class ZWaveNode extends Device {
       }
     });
     if (!propertyFound) {
-      console.log('node%d valueChanged: %s:%s = %s%s',
+      console.log('node%d valueChanged: %s:%s = %s%s (no property found)',
                   this.zwInfo.nodeId, zwValue.value_id,
                   zwValue.label, zwValue.value, units);
     }
