@@ -378,9 +378,9 @@ class ZWaveClassifier {
     };
     const zwValue = node.zwValues[temperatureValueId];
     if (zwValue.units === 'F') {
-      descr.unit = 'farenheit';
+      descr.unit = 'degree fahrenheit';
     } else if (zwValue.units === 'C') {
-      descr.unit = 'celsius';
+      descr.unit = 'degree celsius';
     }
     this.addProperty(
       node,
