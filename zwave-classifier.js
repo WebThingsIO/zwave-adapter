@@ -372,7 +372,7 @@ class ZWaveClassifier {
 
   addTemperatureProperty(node, temperatureValueId) {
     const descr = {
-      // TODO: add proper @type
+      '@type': 'TemperatureProperty',
       label: 'Temperature',
       type: 'number',
     };
