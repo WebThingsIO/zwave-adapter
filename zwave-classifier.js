@@ -211,6 +211,26 @@ class ZWaveClassifier {
 
     node.type = 'thing';  // Just in case it doesn't classify as anything else
 
+    if (!node.hasOwnProperty('@type')) {
+      node['@type'] = [];
+    }
+
+    const binarySensorValueId =
+      node.findValueId(COMMAND_CLASS_SENSOR_BINARY,
+                       1,
+                       SENSOR_BINARY_INDEX_SENSOR);
+    if (binarySensorValueId) {
+      this.initBinarySensor(node, binarySensorValueId);
+    }
+
+    const centralSceneValueId =
+      node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
+                       1,
+                       CENTRAL_SCENE_COUNT);
+    if (centralSceneValueId) {
+      this.initCentralScene(node);
+    }
+
     const alarmValueId =
       node.findValueId(COMMAND_CLASS_ALARM,
                        1,
@@ -249,22 +269,6 @@ class ZWaveClassifier {
                        SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
-    }
-
-    const binarySensorValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_BINARY,
-                       1,
-                       SENSOR_BINARY_INDEX_SENSOR);
-    if (binarySensorValueId) {
-      this.initBinarySensor(node, binarySensorValueId);
-    }
-
-    const centralSceneValueId =
-      node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
-                       1,
-                       CENTRAL_SCENE_COUNT);
-    if (centralSceneValueId) {
-      this.initCentralScene(node);
     }
   }
 
@@ -388,6 +392,10 @@ class ZWaveClassifier {
       descr,
       temperatureValueId
     );
+
+    if (!node['@type'].includes('TemperatureSensor')) {
+      node['@type'].push('TemperatureSensor');
+    }
   }
 
   addUltravioletProperty(node, uvValueId) {
