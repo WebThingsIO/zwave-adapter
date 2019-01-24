@@ -14,6 +14,11 @@ const ZWaveProperty = require('./zwave-property');
 
 const {Constants} = require('gateway-addon');
 
+const {
+  DEBUG_classifier,
+} = require('./zwave-debug');
+const DEBUG = DEBUG_classifier;
+
 // See; http://wiki.micasaverde.com/index.php/ZWave_Command_Classes for a
 // complete list of command classes.
 
@@ -134,6 +139,9 @@ function quirkMatches(quirk, node) {
 
 class ZWaveClassifier {
   classify(node) {
+    DEBUG && console.log(`classify: called for ${node.id}`,
+                         `name = ${node.name}`,
+                         `defaultName = ${node.defaultName}`);
     this.classifyInternal(node);
 
     // Any type of device can be battery powered, so we do this check for
@@ -145,6 +153,9 @@ class ZWaveClassifier {
     if (batteryValueId) {
       this.addBatteryProperty(node, batteryValueId);
     }
+    DEBUG && console.log(`classify: ${node.id} named ${node.name}`,
+                         `defaultName: ${node.defaultName} types:`,
+                         node['@type']);
   }
 
   classifyInternal(node) {
@@ -178,6 +189,11 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL,
                        1,
                        SWITCH_MULTILEVEL_INDEX_LEVEL);
+    if (DEBUG) {
+      console.log(`classify: called for node ${node.id}`);
+      console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
+      console.log('classify:   levelValueId =', levelValueId);
+    }
     if (binarySwitchValueId || levelValueId) {
       // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
       // 1 and 2, and don't seem to work on instance 2. So we always
@@ -219,6 +235,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SENSOR_BINARY,
                        1,
                        SENSOR_BINARY_INDEX_SENSOR);
+    DEBUG && console.log('classify:   binarySensorValueId =',
+                         binarySensorValueId);
     if (binarySensorValueId) {
       this.initBinarySensor(node, binarySensorValueId);
     }
@@ -227,6 +245,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
                        1,
                        CENTRAL_SCENE_COUNT);
+    DEBUG && console.log('classify:   centralSceneValueId =',
+                         centralSceneValueId);
     if (centralSceneValueId) {
       this.initCentralScene(node);
     }
@@ -235,6 +255,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_ALARM,
                        1,
                        ALARM_INDEX_HOME_SECURITY);
+    DEBUG && console.log('classify:   alarmValueId =',
+                         alarmValueId);
     if (alarmValueId) {
       this.addAlarmProperty(node, alarmValueId);
     }
@@ -243,6 +265,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_TEMPERATURE);
+    DEBUG && console.log('classify:   temperatureValueId =',
+                         temperatureValueId);
     if (temperatureValueId) {
       this.addTemperatureProperty(node, temperatureValueId);
     }
@@ -251,6 +275,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_LUMINANCE);
+    DEBUG && console.log('classify:   luminanceValueId =',
+                         luminanceValueId);
     if (luminanceValueId) {
       this.addLuminanceProperty(node, luminanceValueId);
     }
@@ -259,6 +285,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY);
+    DEBUG && console.log('classify:   humidityValueId =',
+                         humidityValueId);
     if (humidityValueId) {
       this.addHumidityProperty(node, humidityValueId);
     }
@@ -267,6 +295,8 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
+    DEBUG && console.log('classify:   uvValueId =',
+                         uvValueId);
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
     }
@@ -292,6 +322,7 @@ class ZWaveClassifier {
         return;
       }
     }
+    DEBUG && console.log(`classify: ${node.id} adding property: ${name}`);
 
     const property = new ZWaveProperty(node, name, descr, valueId,
                                        setZwValueFromValue,

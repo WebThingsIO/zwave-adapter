@@ -12,7 +12,6 @@
 const path = require('path');
 const fs = require('fs');
 const ZWaveNode = require('./zwave-node');
-const SerialPort = require('serialport');
 const zwaveClassifier = require('./zwave-classifier');
 
 let Adapter;
@@ -26,32 +25,26 @@ try {
   Adapter = require('gateway-addon').Adapter;
 }
 
-let ZWaveModule;
-// This will get set to the contents of package.json within loadZWaveAdapters(),
-// at which point we can reference config values in the `moziot` section
-let adapterManifest;
-
-const DEBUG = false;
+const {
+  DEBUG_flow,
+} = require('./zwave-debug');
 
 class ZWaveAdapter extends Adapter {
-  constructor(addonManager, packageName, port) {
+  constructor(addonManager, manifest, zwaveModule, port) {
     // The ZWave adapter supports multiple dongles and
     // will create an adapter object for each dongle.
     // We don't know the actual adapter id until we
     // retrieve the home id from the dongle. So we set the
     // adapter id to zwave-unknown here and fix things up
     // later just before we call addAdapter.
-    super(addonManager, 'zwave-unknown', packageName);
+    super(addonManager, 'zwave-unknown', manifest.name);
+    this.manifest = manifest;
+    this.port = port;
     this.ready = false;
     this.named = false;
 
-    this.port = port;
     this.nodes = {};
     this.nodesBeingAdded = {};
-
-    // Use debugFlow if you need to debug the flow of the program. This causes
-    // prints at the beginning of many functions to print some info.
-    this.debugFlow = false;
 
     // Default to current directory.
     let logDir = '.';
@@ -83,7 +76,7 @@ class ZWaveAdapter extends Adapter {
      * A key can be specified by clicking Configure on this add-on in Gateway.
      */
     /* eslint-enable max-len */
-    const networkKey = adapterManifest.moziot.config.networkKey;
+    const networkKey = this.manifest.moziot.config.networkKey;
 
     if (networkKey) {
       // A regex to validate the required network key format shown above
@@ -96,7 +89,7 @@ class ZWaveAdapter extends Adapter {
       }
     }
 
-    this.zwave = new ZWaveModule(zWaveModuleOptions);
+    this.zwave = new zwaveModule(zWaveModuleOptions);
     this.zwave.on('controller command', this.controllerCommand.bind(this));
     this.zwave.on('driver ready', this.driverReady.bind(this));
     this.zwave.on('driver failed', this.driverFailed.bind(this));
@@ -153,8 +146,8 @@ class ZWaveAdapter extends Adapter {
   }
 
   handleDeviceAdded(node) {
-    if (this.debugFlow) {
-      console.log('handleDeviceAdded:', node.nodeId);
+    if (DEBUG_flow) {
+      console.log(`handleDeviceAdded: ${node.nodeId} name: ${node.name}`);
     }
     delete this.nodesBeingAdded[node.zwInfo.nodeId];
 
@@ -165,7 +158,7 @@ class ZWaveAdapter extends Adapter {
   }
 
   handleDeviceRemoved(node) {
-    if (this.debugFlow) {
+    if (DEBUG_flow) {
       console.log('handleDeviceRemoved:', node.nodeId);
     }
     delete this.nodes[node.zwInfo.nodeId];
@@ -189,7 +182,7 @@ class ZWaveAdapter extends Adapter {
   }
 
   nodeAdded(nodeId) {
-    if (DEBUG) {
+    if (DEBUG_flow) {
       console.log('node%d added', nodeId);
     }
 
@@ -230,7 +223,7 @@ class ZWaveAdapter extends Adapter {
         node.name = node.id;
       }
 
-      if (DEBUG || !node.named) {
+      if (DEBUG_flow || !node.named) {
         console.log(
           'node%d: Named',
           nodeId,
@@ -245,7 +238,7 @@ class ZWaveAdapter extends Adapter {
       }
       node.named = true;
 
-      if (DEBUG) {
+      if (DEBUG_flow) {
         for (const comClass in node.zwClasses) {
           const zwClass = node.zwClasses[comClass];
           console.log('node%d: class %d', nodeId, comClass);
@@ -259,7 +252,7 @@ class ZWaveAdapter extends Adapter {
   }
 
   nodeRemoved(nodeId) {
-    if (DEBUG) {
+    if (DEBUG_flow) {
       console.log('node%d removed', nodeId);
     }
 
@@ -312,7 +305,7 @@ class ZWaveAdapter extends Adapter {
         lastStatus = 'timeout';
         break;
       case 2:
-        if (DEBUG) {
+        if (DEBUG_flow) {
           console.log('node%d: nop', nodeId);
         }
         lastStatus = 'nop';
@@ -421,100 +414,4 @@ class ZWaveAdapter extends Adapter {
   }
 }
 
-function isZWavePort(port) {
-  /**
-   * The popular HUSBZB-1 adapter contains ZWave AND Zigbee radios. With the
-   * most recent drivers from SiLabs, the radios are likely to enumerate in the
-   * following order with the following names:
-   *
-   * /dev/tty.GoControl_zigbee
-   * /dev/tty.GoControl_zwave
-   *
-   * Since `i` comes before `w` when the devices are listed, it's common for the
-   * Zigbee radio to be returned as the ZWave radio. We need to scrutinize the
-   * comName of the radio to ensure that we're returning the actual ZWave one.
-   */
-  const isHUSBZB1 = port.vendorId == '10c4' && port.productId == '8a2a';
-  if (isHUSBZB1) {
-    const isGoControl = port.comName.indexOf('GoControl') >= 0;
-    if (isGoControl) {
-      return port.comName.indexOf('zwave') >= 0;
-    }
-
-    /**
-     * There is also a chance the radios show up with more typical names, if
-     * they're not using the latest drivers:
-     *
-     * /dev/ttyUSB0
-     * /dev/ttyUSB1
-     *
-     * For now, since there's no good way to distinguish one radio from the
-     * other with these names, and since this configuration was previously
-     * valid below, return true.
-     */
-    return true;
-  }
-
-  return ((port.vendorId == '0658' &&
-           port.productId == '0200') ||  // Aeotec Z-Stick Gen-5
-          (port.vendorId == '0658' &&
-           port.productId == '0280') ||  // UZB1
-          (port.vendorId == '10c4' &&
-           port.productId == 'ea60'));   // Aeotec Z-Stick S2
-}
-
-// Scan the serial ports looking for an OpenZWave adapter.
-//
-//    callback(error, port)
-//        Upon success, callback is invoked as callback(null, port) where `port`
-//        is the port object from SerialPort.list().
-//        Upon failure, callback is invoked as callback(err) instead.
-//
-function findZWavePort(callback) {
-  SerialPort.list(function listPortsCallback(error, ports) {
-    if (error) {
-      callback(error);
-    }
-    for (const port of ports) {
-      // Under OSX, SerialPort.list returns the /dev/tty.usbXXX instead
-      // /dev/cu.usbXXX. tty.usbXXX requires DCD to be asserted which
-      // isn't necessarily the case for ZWave dongles. The cu.usbXXX
-      // doesn't care about DCD.
-      if (port.comName.startsWith('/dev/tty.usb')) {
-        port.comName = port.comName.replace('/dev/tty', '/dev/cu');
-      }
-      if (isZWavePort(port)) {
-        callback(null, port);
-        return;
-      }
-    }
-    callback('No ZWave port found');
-  });
-}
-
-function loadZWaveAdapters(addonManager, manifest, errorCallback) {
-  adapterManifest = manifest;
-
-  try {
-    ZWaveModule = require('openzwave-shared');
-  } catch (err) {
-    errorCallback(manifest.name, `Failed to load openzwave-shared: ${err}`);
-    return;
-  }
-
-  findZWavePort(function(error, port) {
-    if (error) {
-      errorCallback(manifest.name, 'Unable to find ZWave adapter');
-      return;
-    }
-
-    console.log('Found ZWave port @', port.comName);
-
-    new ZWaveAdapter(addonManager, manifest.name, port);
-
-    // The zwave adapter will be added when it's driverReady method is called.
-    // Prior to that we don't know what the homeID of the adapter is.
-  });
-}
-
-module.exports = loadZWaveAdapters;
+module.exports = ZWaveAdapter;
