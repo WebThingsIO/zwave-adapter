@@ -1,7 +1,7 @@
 {
   "name": "zwave-adapter",
   "display_name": "Z-Wave",
-  "version": "0.6.2",
+  "version": "0.7.0",
   "description": "Z-Wave adapter plugin for Mozilla IoT Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
@@ -29,7 +29,8 @@
   },
   "devDependencies": {
     "babel-eslint": "^10.0.1",
-    "eslint": "^5.10.0"
+    "eslint": "^5.12.1",
+    "eslint-plugin-html": "^5.0.0"
   },
   "files": [
     "LICENSE",
@@ -38,6 +39,7 @@
     "package.json",
     "zwave-adapter.js",
     "zwave-classifier.js",
+    "zwave-debug.js",
     "zwave-node.js",
     "zwave-property.js"
   ],
@@ -50,7 +52,8 @@
     "plugin": true,
     "exec": "{nodeLoader} {path}",
     "config": {
-      "networkKey": ""
+      "networkKey": "",
+      "debug": ""
     },
     "schema": {
       "type": "object",
@@ -58,6 +61,10 @@
         "networkKey": {
           "type": "string",
           "description": "16-byte, comma-separated hex string (0xb4,0xc9,etc...)"
+        },
+        "debug": {
+          "type": "string",
+          "default": ""
         }
       }
     }

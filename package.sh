@@ -5,6 +5,12 @@
 # from this problem.
 export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
 
+if [ "$1" == "--dev" ]; then
+  PRODUCTION=
+else
+  PRODUCTION='--production'
+fi
+
 rm -rf node_modules
 if [ -z "${ADDON_ARCH}" ]; then
   TARFILE_SUFFIX=
@@ -14,10 +20,10 @@ else
 fi
 if [ "${ADDON_ARCH}" == "linux-arm" ]; then
   # We assume that CC and CXX are pointing to the cross compilers
-  yarn --ignore-scripts --production
+  yarn --ignore-scripts ${PRODUCTION}
   npm rebuild --arch=armv6l --target_arch=arm
 else
-  yarn install --production
+  yarn install ${PRODUCTION}
 fi
 
 rm -f SHA256SUMS

@@ -23,7 +23,10 @@ const BASIC_STR = [
   'RoutingSlave',
 ];
 
-const DEBUG = false;
+const {
+  DEBUG_node,
+} = require('./zwave-debug');
+const DEBUG = DEBUG_node;
 
 class ZWaveNode extends Device {
 
