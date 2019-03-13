@@ -15,6 +15,11 @@ const padLeft = Utils.padLeft;
 const padRight = Utils.padRight;
 const repeatChar = Utils.repeatChar;
 
+const {
+  COMMAND_CLASS,
+  GENERIC_TYPE_STR,
+} = require('./zwave-constants');
+
 const BASIC_STR = [
   '???',
   'Controller',
@@ -54,6 +59,8 @@ class ZWaveNode extends Device {
     this.zwValues = {};
     this.ready = false;
     this.lastStatus = 'constructed';
+    this.disablePoll = false;
+    this.canSleep = false;
   }
 
   asDict() {
@@ -122,28 +129,59 @@ class ZWaveNode extends Device {
     }
   }
 
-  handleCentralSceneButton(buttonProperty) {
-    DEBUG && console.log(`handleCentralSceneButton: node${this.zwInfo.nodeId}:`,
-                         'value:', buttonProperty.value);
-    switch (buttonProperty.value) {
+  getSceneCount() {
+    const sceneCountValueId =
+      this.findValueId(COMMAND_CLASS.CENTRAL_SCENE, 1, 0);
+    if (sceneCountValueId) {
+      return this.zwValues[sceneCountValueId].value;
+    }
+    return 0;
+  }
+
+  handleCentralSceneProperty(sceneProperty) {
+    DEBUG && console.log('handleCentralSceneProperty:',
+                         `node${this.zwInfo.nodeId}:`,
+                         'value:', sceneProperty.value);
+    const onProperty = sceneProperty.info.onProperty;
+    const levelProperty = sceneProperty.info.levelProperty;
+    const buttonNum = sceneProperty.info.buttonNum;
+    switch (sceneProperty.value) {
       case 0:   // pressed & released (short press)
-        if (buttonProperty.buttonNum == 1) {
-          this.setPropertyValue(this.centralSceneOnProperty, true);
-        } else if (buttonProperty.buttonNum == 2) {
-          this.setPropertyValue(this.centralSceneOnProperty, false);
+        DEBUG && console.log('handleCentralSceneProperty: press',
+                             'pressAction:', sceneProperty.info.pressAction);
+        switch (sceneProperty.info.pressAction) {
+          case 'on':
+            this.setPropertyValue(onProperty, true);
+            break;
+          case 'off':
+            this.setPropertyValue(onProperty, false);
+            break;
+          case 'toggle':
+            this.setPropertyValue(onProperty, !onProperty.value);
+            break;
         }
-        this.notifyEvent(`${buttonProperty.buttonNum}-pressed`);
+        this.notifyEvent(`${buttonNum}-pressed`);
         break;
       case 1:   // released (long press)
-        this.handleCentralSceneButtonStopCommand(
-          this.centralSceneLevelProperty);
-        this.notifyEvent(`${buttonProperty.buttonNum}-released`);
+        DEBUG && console.log('handleCentralSceneProperty: release',
+                             'moveDir:', sceneProperty.info.moveDir);
+        if (sceneProperty.info.moveDir) {
+          this.handleCentralSceneButtonStopCommand(levelProperty);
+        }
+        this.notifyEvent(`${buttonNum}-released`);
+        sceneProperty.longPressed = false;
         break;
       case 2: { // long pressed
-        const moveDir = buttonProperty.buttonNum == 1 ? 1 : -1;
-        this.handleCentralSceneButtonMoveCommand(
-          this.centralSceneLevelProperty, moveDir);
-        this.notifyEvent(`${buttonProperty.buttonNum}-longPressed`);
+        DEBUG && console.log('handleCentralSceneProperty: longPress',
+                             'moveDir:', sceneProperty.info.moveDir);
+        if (sceneProperty.info.moveDir) {
+          this.handleCentralSceneButtonMoveCommand(
+            levelProperty, sceneProperty.info.moveDir);
+        }
+        if (!sceneProperty.longPressed) {
+          this.notifyEvent(`${buttonNum}-longPressed`);
+        }
+        sceneProperty.longPressed = true;
         break;
       }
     }
@@ -185,6 +223,47 @@ class ZWaveNode extends Device {
     }
   }
 
+  handleSlideEnd(property) {
+    // The value is a 32-bit number. The first 8 bits are the
+    // button number, and the next 8 bits are a direction
+    // (0 = down, 1 = up) and the bottom 16 bits are a position.
+
+    const buttonNum = (property.value >> 24) & 0xff;
+    const dir = (property.value >> 16) & 0xff;
+    const endPosn = property.value & 0xffff;
+    const startPosn = this.slideStartProperty.value & 0xffff;
+    const slideSize = endPosn - startPosn;
+    // 26000 was determined empirically as the size of one of
+    // the squares on the WallMote Quad.
+    const slidePercent = Math.round(slideSize * 100 / 26000);
+
+    const sceneProperty = this.sceneProperty[buttonNum];
+    if (!sceneProperty) {
+      console.error('handleSlideEnd: node:', this.id,
+                    'no sceneProperty for button', buttonNum);
+      return;
+    }
+
+    const levelProperty = sceneProperty.info.levelProperty;
+    if (!levelProperty) {
+      console.error('handleSlideEnd: node:', this.id,
+                    'no levelProperty for button', buttonNum);
+    }
+    let newValue = levelProperty.value + slidePercent;
+    newValue = Math.max(0, newValue);
+    newValue = Math.min(100, newValue);
+
+    DEBUG && console.log('handleSlideEnd: button', buttonNum,
+                         'dir:', dir,
+                         'size:', slideSize,
+                         `${slidePercent}%`,
+                         'oldVal:', levelProperty.value,
+                         'newVal:', newValue);
+    if (newValue != levelProperty.value) {
+      this.setPropertyValue(levelProperty, newValue);
+    }
+  }
+
   notifyEvent(eventName, eventData) {
     if (eventData) {
       console.log(this.name, 'event:', eventName, 'data:', eventData);
@@ -205,17 +284,33 @@ class ZWaveNode extends Device {
     if (property.hasOwnProperty('updated')) {
       property.updated();
     }
+
+    if (this.canSleep) {
+      // For battery powered devices, we want to write out the
+      // configuration whenever a property change occurs. This
+      // ensures that when we start up we'll have the best idea
+      // of the last state. For mains powered devices, we'll get
+      // the information during the scan, so we don't need to
+      // save it here.
+      const valueId = property.valueId;
+      if (valueId) {
+        const zwValue = this.zwValues[valueId];
+        if (zwValue) {
+          this.adapter.writeConfigDeferred();
+        }
+      }
+    }
   }
 
   static oneLineHeader(line) {
     if (line === 0) {
       return `Node LastStat ${padRight('Basic Type', 16)} ${
-        padRight('Type', 24)} ${padRight('Product Name', 50)} ${
-        padRight('Name', 30)} Location`;
+        padRight('Generic Type', 19)} ${padRight('Spec', 4)} ${
+        padRight('Product Name', 40)} ${padRight('Name', 30)}`;
     }
     return `${repeatChar('-', 4)} ${repeatChar('-', 8)} ${
-      repeatChar('-', 16)} ${repeatChar('-', 24)} ${repeatChar('-', 50)} ${
-      repeatChar('-', 30)} ${repeatChar('-', 30)}`;
+      repeatChar('-', 16)} ${repeatChar('-', 19)} ${repeatChar('-', 4)} ${
+      repeatChar('-', 40)} ${repeatChar('-', 30)}`;
   }
 
   oneLineSummary() {
@@ -228,10 +323,17 @@ class ZWaveNode extends Device {
         BASIC_STR[basic] :
         `??? ${basic} ???`;
 
+    const generic = zwave.getNodeGeneric(nodeId);
+    const genericStr = GENERIC_TYPE_STR[generic] ||
+                      `Unknown 0x${generic.toString(16)}`;
+
+    const specific = zwave.getNodeSpecific(nodeId);
+    const specificStr = `0x${specific.toString(16)}`;
+
     return `${padLeft(nodeId, 3)}: ${padRight(this.lastStatus, 8)} ${
-      padRight(basicStr, 16)} ${padRight(this.zwInfo.type, 24)} ${
-      padRight(this.zwInfo.product, 50)} ${padRight(this.name, 30)} ${
-      this.zwInfo.location}`;
+      padRight(basicStr, 16)} ${padRight(genericStr, 19)} ${
+      padRight(specificStr, 4)} ${padRight(this.zwInfo.product, 40)} ${
+      padRight(this.name, 30)}`;
   }
 
   // Used to set properties which don't have an associated valueId

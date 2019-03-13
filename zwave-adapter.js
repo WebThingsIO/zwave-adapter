@@ -14,16 +14,7 @@ const fs = require('fs');
 const ZWaveNode = require('./zwave-node');
 const zwaveClassifier = require('./zwave-classifier');
 
-let Adapter;
-try {
-  Adapter = require('../adapter');
-} catch (e) {
-  if (e.code !== 'MODULE_NOT_FOUND') {
-    throw e;
-  }
-
-  Adapter = require('gateway-addon').Adapter;
-}
+const {Adapter} = require('gateway-addon');
 
 const {
   DEBUG_flow,
@@ -154,6 +145,7 @@ class ZWaveAdapter extends Adapter {
     if (node.nodeId > 1) {
       zwaveClassifier.classify(node);
       super.handleDeviceAdded(node);
+      this.writeConfigDeferred();
     }
   }
 
@@ -177,8 +169,8 @@ class ZWaveAdapter extends Adapter {
     }
     console.log('Scan complete');
     this.ready = true;
-    this.zwave.requestAllConfigParams(3);
     this.dump();
+    this.writeConfigDeferred();
   }
 
   nodeAdded(nodeId) {
@@ -239,12 +231,14 @@ class ZWaveAdapter extends Adapter {
       node.named = true;
 
       if (DEBUG_flow) {
-        for (const comClass in node.zwClasses) {
-          const zwClass = node.zwClasses[comClass];
+        for (const comClass of node.zwClasses) {
           console.log('node%d: class %d', nodeId, comClass);
-          for (const idx in zwClass) {
-            console.log('node%d:   %s=%s',
-                        nodeId, zwClass[idx].label, zwClass[idx].value);
+          for (const valueId in node.zwValues) {
+            const zwValue = node.zwValues[valueId];
+            if (zwValue.class_id == comClass) {
+              console.log('node%d:   %s=%s',
+                          nodeId, zwValue.label, zwValue.value);
+            }
           }
         }
       }
@@ -260,6 +254,7 @@ class ZWaveAdapter extends Adapter {
     if (node) {
       node.lastStatus = 'removed';
       this.handleDeviceRemoved(node);
+      this.writeConfigDeferred();
     }
   }
 
@@ -274,6 +269,9 @@ class ZWaveAdapter extends Adapter {
       node.lastStatus = 'ready';
       node.ready = true;
 
+      if (nodeId in this.nodesBeingAdded) {
+        this.handleDeviceAdded(node);
+      }
       for (const property of node.properties.values()) {
         if (!property.valueId) {
           continue;
@@ -281,12 +279,16 @@ class ZWaveAdapter extends Adapter {
         switch (node.zwValues[property.valueId].class_id) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
-            this.zwave.enablePoll(node.zwValues[property.valueId], 1);
+            if (node.disablePoll) {
+              // Polling is disabled by default, but his will cover
+              // off the case where a device was previously set to poll
+              // (which is remembered in the config file)
+              this.zwave.disablePoll(node.zwValues[property.valueId]);
+            } else {
+              this.zwave.enablePoll(node.zwValues[property.valueId], 1);
+            }
             break;
         }
-      }
-      if (nodeId in this.nodesBeingAdded) {
-        this.handleDeviceAdded(node);
       }
     }
   }
@@ -317,6 +319,7 @@ class ZWaveAdapter extends Adapter {
       case 4:
         console.log('node%d: node sleep', nodeId);
         lastStatus = 'sleeping';
+        node.canSleep = true;
         break;
       case 5:
         console.log('node%d: node dead', nodeId);
@@ -359,6 +362,26 @@ class ZWaveAdapter extends Adapter {
     if (node) {
       node.zwValueRemoved(comClass, valueInstance, valueIndex);
     }
+  }
+
+  writeConfig() {
+    console.log('Writing ZWave configuration');
+    this.zwave.writeConfig();
+  }
+
+  writeConfigDeferred() {
+    // In order to reduce the number of times we rewrite the device info
+    // we defer writes for a time.
+    const timeoutSeconds = DEBUG_flow ? 1 : 120;
+
+    if (this.writeConfigTimeout) {
+      // already a timeout setup.
+      return;
+    }
+    this.writeConfigTimeout = setTimeout(() => {
+      this.writeConfigTimeout = null;
+      this.writeConfig();
+    }, timeoutSeconds * 1000);
   }
 
   // eslint-disable-next-line no-unused-vars

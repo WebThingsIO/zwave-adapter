@@ -15,6 +15,12 @@ const ZWaveProperty = require('./zwave-property');
 const {Constants} = require('gateway-addon');
 
 const {
+  COMMAND_CLASS,
+  GENERIC_TYPE,
+  GENERIC_TYPE_STR,
+} = require('./zwave-constants');
+
+const {
   DEBUG_classifier,
 } = require('./zwave-debug');
 const DEBUG = DEBUG_classifier;
@@ -22,20 +28,11 @@ const DEBUG = DEBUG_classifier;
 // See; http://wiki.micasaverde.com/index.php/ZWave_Command_Classes for a
 // complete list of command classes.
 
-const COMMAND_CLASS_SWITCH_BINARY = 37;       // 0x25
-const COMMAND_CLASS_SWITCH_MULTILEVEL = 38;   // 0x26
-const COMMAND_CLASS_SENSOR_BINARY = 48;       // 0x30
-const COMMAND_CLASS_SENSOR_MULTILEVEL = 49;   // 0x31
-const COMMAND_CLASS_METER = 50;               // 0x32
-// const COMMAND_CLASS_SWITCH_ALL = 39;       // 0x27
-const COMMAND_CLASS_CENTRAL_SCENE = 91;       // 0x5b
-const COMMAND_CLASS_CONFIGURATION = 112;      // 0x70
-const COMMAND_CLASS_ALARM = 113;              // 0x71
-const COMMAND_CLASS_BATTERY = 128;            // 0x80
-
 const AEOTEC_MANUFACTURER_ID = '0x0086';
-const AEOTEC_ZW096_PRODUCT_ID = '0x0060'; // SmartPlug
+const AEOTEC_ZW096_PRODUCT_ID = '0x0060'; // SmartPlug (Switch)
+const AEOTEC_ZW099_PRODUCT_ID = '0x0063'; // SmartPlug (Dimmer)
 const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
+const AEOTEC_ZW130_PRODUCT_ID = '0x0082'; // WallMote Quad
 
 // From cpp/src/command_classes/SwitchMultilevel.cpp
 // The code uses "_data[5]+3" for the index.
@@ -52,8 +49,6 @@ const BATTERY_INDEX_LEVEL = 0;
 
 // From cpp/src/command_classes/CentralScene.cpp#L51
 const CENTRAL_SCENE_COUNT = 0;
-const CENTRAL_SCENE_1 = 1;
-const CENTRAL_SCENE_2 = 2;
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification", Table 67 - Meter Table Capability Report.
@@ -97,14 +92,35 @@ const QUIRKS = [
     excludeProperties: ['current'],
   },
   {
-    // The Aeotec ZW096 says it supports the MULTILEVEL command class, but
-    // setting it acts like a no-op. We remove the 'level' property so that
-    // the UI doesn't see it.
+    // The Aeotec ZW096 (Smart Switch 6) says it supports the MULTILEVEL
+    // command class, but setting it acts like a no-op. We remove the
+    // 'level' property so that the UI doesn't see it.
     zwInfo: {
       manufacturerId: AEOTEC_MANUFACTURER_ID,
       productId: AEOTEC_ZW096_PRODUCT_ID,
     },
     excludeProperties: ['level'],
+    // polling isn't required with the configuration change below
+    disablePoll: true,
+    setConfigs: [
+      // Enable to send a Basic CC Report when the switch state
+      // changes.
+      {paramId: 80, value: 2, size: 1},
+    ],
+  },
+  {
+    // Aeotec Smart Dimmer 6
+    zwInfo: {
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
+      productId: AEOTEC_ZW099_PRODUCT_ID,
+    },
+    // polling isn't required with the configuration change below
+    disablePoll: true,
+    setConfigs: [
+      // Enable to send a Basic CC Report when the switch state
+      // changes.
+      {paramId: 80, value: 2, size: 1},
+    ],
   },
   {
     // The Aeotec ZW100 says it supports the SENSOR_BINARY command class,
@@ -116,11 +132,34 @@ const QUIRKS = [
       productId: AEOTEC_ZW100_PRODUCT_ID,
     },
     excludeProperties: ['on'],
-
     setConfigs: [
       // Configure motion sensor to send 'Basic Set', rather than
       // 'Binary Sensor report'.
-      {instance: 1, index: 5, value: 1},
+      {paramId: 5, value: 1, size: 1},
+    ],
+  },
+  {
+    // By default, the Aeotec ZW130 only sends presses and not
+    // swipes. Setting this config allows swipes to be detected
+    // as well.
+    zwInfo: {
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
+      productId: AEOTEC_ZW130_PRODUCT_ID,
+    },
+    setConfigs: [
+      // Configure what will be sent when pressing a button. The
+      // default value of 2 just sends a Central Scene Notification.
+      // A value of 3 also sends configuration reports.
+      // Note: We want to set the value to 3, which corresponds to the
+      // an item index of 2 since the zw130.xml file is missing an
+      // entry for a value of 2.
+      //  Index 0 = Value 0
+      //  Index 1 = Value 1
+      //  Index 2 = Value 3
+      // The OpenZWave C++ API is a bit deceiving in that it's called
+      // SetByValue, but for lists, the value is in the index into the
+      // list.
+      {paramId: 4, value: 2, size: 1},
     ],
   },
 ];
@@ -147,7 +186,7 @@ class ZWaveClassifier {
     // Any type of device can be battery powered, so we do this check for
     // all devices.
     const batteryValueId =
-      node.findValueId(COMMAND_CLASS_BATTERY,
+      node.findValueId(COMMAND_CLASS.BATTERY,
                        1,
                        BATTERY_INDEX_LEVEL);
     if (batteryValueId) {
@@ -159,70 +198,133 @@ class ZWaveClassifier {
   }
 
   classifyInternal(node) {
+    const zwave = node.adapter.zwave;
+    const nodeId = node.zwInfo.nodeId;
+    DEBUG_classifier &&
+      console.log('classifyInternal:',
+                  `manufacturerId: ${node.zwInfo.manufacturerId}`,
+                  `productId: ${node.zwInfo.productId}`);
     // Search through the known quirks and see if we need to apply any
     // configurations
     for (const quirk of QUIRKS) {
+      if (!quirkMatches(quirk, node)) {
+        continue;
+      }
+
+      if (quirk.hasOwnProperty('disablePoll')) {
+        console.log(`Device ${node.id}`,
+                    `Setting disablePoll to ${quirk.disablePoll}`);
+        node.disablePoll = quirk.disablePoll;
+      }
+
       if (!quirk.hasOwnProperty('setConfigs')) {
         continue;
       }
 
-      if (quirkMatches(quirk, node)) {
-        for (const setConfig of quirk.setConfigs) {
-          console.log(`Setting device ${node.id} config ` +
-                      `instance: ${setConfig.instance}` +
-                      `index: ${setConfig.index}` +
-                      `to value: ${setConfig.value}`);
-          node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
-                                      COMMAND_CLASS_CONFIGURATION, // classId
-                                      setConfig.instance,          // instance
-                                      setConfig.index,             // index
-                                      setConfig.value);            // value
+      for (const setConfig of quirk.setConfigs) {
+        const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION,
+                                         1, setConfig.paramId);
+        if (valueId) {
+          const zwValue = node.zwValues[valueId];
+          if (zwValue) {
+            let value = zwValue.value;
+            let valueStr = `${value}`;
+            if (zwValue.type == 'list') {
+              // For lists, the value contains the looked up string
+              // rather than the index. Figure out the index.
+              const idx = zwValue.values.findIndex((cfgItem) => {
+                return cfgItem == zwValue.value;
+              });
+              if (idx < 0) {
+                // This shouldn't happen. If it does it means that
+                // something in the config file has changed.
+                console.error(`Device ${node.id} config ` +
+                              `paramId: ${setConfig.paramId} ` +
+                              `unable to determine index of '${value}'`);
+                continue;
+              }
+              value = idx;
+              valueStr = `(index ${value})`;
+            }
+            if (value == setConfig.value) {
+              console.log(`Device ${node.id} config ` +
+                          `paramId: ${setConfig.paramId} ` +
+                          `already has value: ${valueStr}`);
+            } else {
+              console.log(`Setting device ${node.id} config ` +
+                          `paramId: ${setConfig.paramId} ` +
+                          `to value: ${setConfig.value} ` +
+                          `size: ${setConfig.size}`);
+              zwave.setConfigParam(nodeId,
+                                   setConfig.paramId,
+                                   setConfig.value,
+                                   setConfig.size);
+            }
+          } else {
+            console.error(`Device ${node.id} config ` +
+                          `paramId: ${setConfig.paramId} ` +
+                          `unable to find value with id ${valueId}`);
+          }
+        } else {
+          console.error(`Device ${node.id} config ` +
+                        `paramId: ${setConfig.paramId} ` +
+                        `unable to find valueId`);
         }
       }
     }
 
+    const genericType = zwave.getNodeGeneric(nodeId);
+
     const binarySwitchValueId =
-      node.findValueId(COMMAND_CLASS_SWITCH_BINARY,
+      node.findValueId(COMMAND_CLASS.SWITCH_BINARY,
                        1,
                        SWITCH_BINARY_INDEX_SWITCH);
     const levelValueId =
-      node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL,
+      node.findValueId(COMMAND_CLASS.SWITCH_MULTILEVEL,
                        1,
                        SWITCH_MULTILEVEL_INDEX_LEVEL);
-    if (DEBUG) {
-      console.log(`classify: called for node ${node.id}`);
-      console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
-      console.log('classify:   levelValueId =', levelValueId);
-    }
-    if (binarySwitchValueId || levelValueId) {
-      // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
-      // 1 and 2, and don't seem to work on instance 2. So we always
-      // use instance 1 for the first outlet, and then 3 and beyond for the
-      // second and beyond outlets.
-      this.initSwitch(node, binarySwitchValueId, levelValueId, '');
+    const alarmValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_HOME_SECURITY);
+    const binarySensorValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_BINARY,
+                       1,
+                       SENSOR_BINARY_INDEX_SENSOR);
+    const centralSceneValueId =
+      node.findValueId(COMMAND_CLASS.CENTRAL_SCENE,
+                       1,
+                       CENTRAL_SCENE_COUNT);
+    const temperatureValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_TEMPERATURE);
+    const luminanceValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_LUMINANCE);
+    const humidityValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY);
+    const uvValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
 
-      // Check to see if this is a switch with multiple outlets.
-      let inst = 3;
-      let switchCount = 1;
-      // eslint-disable-next-line no-constant-condition
-      while (true) {
-        const bsValueId =
-          node.findValueId(COMMAND_CLASS_SWITCH_BINARY,
-                           inst,
-                           SWITCH_BINARY_INDEX_SWITCH);
-        const lvlValueId =
-          node.findValueId(COMMAND_CLASS_SWITCH_MULTILEVEL,
-                           inst,
-                           SWITCH_MULTILEVEL_INDEX_LEVEL);
-        if (bsValueId || lvlValueId) {
-          switchCount += 1;
-          this.initSwitch(node, bsValueId, lvlValueId, switchCount.toString());
-          inst += 1;
-        } else {
-          break;
-        }
-      }
-      return;
+    if (DEBUG) {
+      const genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
+      console.log(`classify: called for node ${node.id},`,
+                  `genericType = ${genericTypeStr}`,
+                  `(0x${genericType.toString(16)})`);
+      console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
+      console.log('classify:   levelValueId        =', levelValueId);
+      console.log('classify:   binarySensorValueId =', binarySensorValueId);
+      console.log('classify:   centralSceneValueId =', centralSceneValueId);
+      console.log('classify:   alarmValueId        =', alarmValueId);
+      console.log('classify:   temperatureValueId  =', temperatureValueId);
+      console.log('classify:   luminanceValueId    =', luminanceValueId);
+      console.log('classify:   humidityValueId     =', humidityValueId);
     }
 
     node.type = 'thing';  // Just in case it doesn't classify as anything else
@@ -231,72 +333,70 @@ class ZWaveClassifier {
       node['@type'] = [];
     }
 
-    const binarySensorValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_BINARY,
-                       1,
-                       SENSOR_BINARY_INDEX_SENSOR);
-    DEBUG && console.log('classify:   binarySensorValueId =',
-                         binarySensorValueId);
-    if (binarySensorValueId) {
-      this.initBinarySensor(node, binarySensorValueId);
+    switch (genericType) {
+      case GENERIC_TYPE.SWITCH_BINARY:
+      case GENERIC_TYPE.SWITCH_MULTILEVEL:
+      {
+        // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
+        // 1 and 2, and don't seem to work on instance 2. So we always
+        // use instance 1 for the first outlet, and then 3 and beyond for the
+        // second and beyond outlets.
+        this.initSwitch(node, binarySwitchValueId, levelValueId, '');
+
+        // Check to see if this is a switch with multiple outlets.
+        let inst = 3;
+        let switchCount = 1;
+        // eslint-disable-next-line no-constant-condition
+        while (true) {
+          const bsValueId =
+            node.findValueId(COMMAND_CLASS.SWITCH_BINARY,
+                             inst,
+                             SWITCH_BINARY_INDEX_SWITCH);
+          const lvlValueId =
+            node.findValueId(COMMAND_CLASS.SWITCH_MULTILEVEL,
+                             inst,
+                             SWITCH_MULTILEVEL_INDEX_LEVEL);
+          if (bsValueId || lvlValueId) {
+            switchCount += 1;
+            this.initSwitch(node, bsValueId, lvlValueId,
+                            switchCount.toString());
+            inst += 1;
+          } else {
+            break;
+          }
+        }
+        break;
+      }
+
+      case GENERIC_TYPE.SENSOR_BINARY:
+        this.initBinarySensor(node, binarySensorValueId);
+        break;
+
+      case GENERIC_TYPE.WALL_CONTROLLER:
+        this.initCentralScene(node);
+        break;
+
+      default:
+        console.error(`Node: ${nodeId} unknown genericType: ${genericType}`);
+        break;
     }
 
-    const centralSceneValueId =
-      node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
-                       1,
-                       CENTRAL_SCENE_COUNT);
-    DEBUG && console.log('classify:   centralSceneValueId =',
-                         centralSceneValueId);
-    if (centralSceneValueId) {
-      this.initCentralScene(node);
-    }
-
-    const alarmValueId =
-      node.findValueId(COMMAND_CLASS_ALARM,
-                       1,
-                       ALARM_INDEX_HOME_SECURITY);
-    DEBUG && console.log('classify:   alarmValueId =',
-                         alarmValueId);
     if (alarmValueId) {
       this.addAlarmProperty(node, alarmValueId);
     }
 
-    const temperatureValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
-                       1,
-                       SENSOR_MULTILEVEL_INDEX_TEMPERATURE);
-    DEBUG && console.log('classify:   temperatureValueId =',
-                         temperatureValueId);
     if (temperatureValueId) {
       this.addTemperatureProperty(node, temperatureValueId);
     }
 
-    const luminanceValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
-                       1,
-                       SENSOR_MULTILEVEL_INDEX_LUMINANCE);
-    DEBUG && console.log('classify:   luminanceValueId =',
-                         luminanceValueId);
     if (luminanceValueId) {
       this.addLuminanceProperty(node, luminanceValueId);
     }
 
-    const humidityValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
-                       1,
-                       SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY);
-    DEBUG && console.log('classify:   humidityValueId =',
-                         humidityValueId);
     if (humidityValueId) {
       this.addHumidityProperty(node, humidityValueId);
     }
 
-    const uvValueId =
-      node.findValueId(COMMAND_CLASS_SENSOR_MULTILEVEL,
-                       1,
-                       SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
-    DEBUG && console.log('classify:   uvValueId =',
-                         uvValueId);
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
     }
@@ -446,64 +546,163 @@ class ZWaveClassifier {
     node['@type'] = ['OnOffSwitch', 'MultiLevelSwitch', 'PushButton'];
     node.name = `${node.id}-button`;
 
-    node.centralSceneOnProperty = this.addCentralSceneOnProperty(node);
-    node.centralSceneLevelProperty = this.addCentralSceneLevelProperty(node);
+    const sceneCount = node.getSceneCount();
+    node.buttonCount = sceneCount;
+    DEBUG && console.log('initCentralScene: sceneCount =', sceneCount);
+    if (sceneCount == 2) {
+      // For a 2 button device, we assume that one of the buttons
+      // is on/bright and that the other is off/dim
 
-    node.centralSceneOnProperty.value = false;
-    node.centralSceneLevelProperty.value = 0;
+      const onProperty = this.addCentralSceneOnProperty(node, 0);
+      const levelProperty = this.addCentralSceneLevelProperty(node, 0);
 
-    this.addCentralSceneButton(node, CENTRAL_SCENE_1);
-    this.addCentralSceneButton(node, CENTRAL_SCENE_2);
+      onProperty.value = false;
+      levelProperty.value = 0;
+
+      this.addCentralSceneProperty(node, {
+        buttonNum: 1,
+        label: 'Top',
+        pressAction: 'on',
+        moveDir: 1,
+        onProperty: onProperty,
+        levelProperty: levelProperty,
+      });
+      this.addCentralSceneProperty(node, {
+        buttonNum: 2,
+        label: 'Bottom',
+        pressAction: 'off',
+        moveDir: -1,
+        onProperty: onProperty,
+        levelProperty: levelProperty,
+      });
+    } else if (node.zwInfo.manufacturerId == AEOTEC_MANUFACTURER_ID &&
+               node.zwInfo.productId == AEOTEC_ZW130_PRODUCT_ID) {
+      // WallMote Quad
+      const buttonLabel = [
+        '',
+        'Top Left',
+        'Top Right',
+        'Bottom Left',
+        'Bottom Right',
+      ];
+      node.sceneProperty = [];
+      for (let buttonNum = 1; buttonNum <= 4; buttonNum++) {
+        const onProperty =
+          this.addCentralSceneOnProperty(node, buttonNum);
+        const levelProperty =
+          this.addCentralSceneLevelProperty(node, buttonNum);
+        onProperty.value = false;
+        levelProperty.value = 0;
+        const sceneProperty = this.addCentralSceneProperty(node, {
+          buttonNum: buttonNum,
+          label: buttonLabel[buttonNum],
+          pressAction: 'toggle',
+          moveDir: 0,   // We use slide to incr/decr
+          onProperty: onProperty,
+          levelProperty: levelProperty,
+        });
+        node.sceneProperty[buttonNum] = sceneProperty;
+      }
+      this.addSlideProperties(node);
+      this.addConfigList(node, 1, 'Touch Sounds');
+      this.addConfigList(node, 2, 'Touch Vibration');
+      this.addConfigColorRGBX(node, 5, 'Touch Color');
+    }
   }
 
-  addCentralSceneButton(node, buttonNum) {
-    const valueId = node.findValueId(COMMAND_CLASS_CENTRAL_SCENE,
+  addSlideProperties(node) {
+    const slideStartValueId =
+      node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, 9);
+    const slideEndValueId =
+      node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, 10);
+
+    if (!slideStartValueId || !slideEndValueId) {
+      return;
+    }
+
+    node.slideStartProperty = this.addProperty(
+      node,
+      '_slideStart',
+      {
+        '@type': 'number',
+        readOnly: true,
+      },
+      slideStartValueId
+    );
+    node.slideEndProperty = this.addProperty(
+      node,
+      '_slideEnd',
+      {
+        '@type': 'number',
+        readOnly: true,
+      },
+      slideEndValueId
+    );
+
+    node.slideEndProperty.updated = function() {
+      node.handleSlideEnd(node.slideEndProperty);
+    };
+  }
+
+  addCentralSceneProperty(node, sceneInfo) {
+    const buttonNum = sceneInfo.buttonNum;
+    const valueId = node.findValueId(COMMAND_CLASS.CENTRAL_SCENE,
                                      1,
                                      buttonNum);
-    const buttonProperty = this.addProperty(node,
-                                            `_button${buttonNum}`,
-                                            {
-                                              '@type': 'number',
-                                              readOnly: true,
-                                            },
-                                            valueId);
-    buttonProperty.buttonNum = buttonNum;
+    const sceneProperty =
+      this.addProperty(node,
+                       `_scene${buttonNum}`,
+                       {
+                         '@type': 'number',
+                         readOnly: true,
+                       },
+                       valueId);
+    sceneProperty.info = sceneInfo;
+    sceneProperty.longPressed = false;
 
-    buttonProperty.updated = function() {
-      node.handleCentralSceneButton(buttonProperty);
+    sceneProperty.updated = function() {
+      node.handleCentralSceneProperty(sceneProperty);
     };
 
-    let buttonLabel = `${buttonNum}`;
-    switch (buttonNum) {
-      case 1:
-        buttonLabel = 'Top';
-        break;
-      case 2:
-        buttonLabel = 'Bottom';
-        break;
-    }
+    const label = sceneInfo.label;
+
     this.addEvents(node, {
       [`${buttonNum}-pressed`]: {
         '@type': 'PressedEvent',
-        description: `${buttonLabel} button pressed and released quickly`,
+        description: `${label} button pressed and released quickly`,
       },
       [`${buttonNum}-released`]: {
         '@type': 'ReleasedEvent',
-        description: `${buttonLabel} button released after being held`,
+        description: `${label} button released after being held`,
       },
       [`${buttonNum}-longPressed`]: {
         '@type': 'LongPressedEvent',
-        description: `${buttonLabel} button pressed and held`,
+        description: `${label} button pressed and held`,
       },
     });
+    return sceneProperty;
   }
 
-  addCentralSceneOnProperty(node) {
+  addCentralSceneOnProperty(node, buttonNum) {
+    if (buttonNum < 2) {
+      return this.addProperty(
+        node,                     // node
+        'on',                     // name
+        {                         // property decscription
+          '@type': 'OnOffProperty',
+          label: 'On/Off',
+          type: 'boolean',
+          readOnly: true,
+        },
+        null                      // valueId
+      );
+    }
     return this.addProperty(
       node,                     // node
-      'on',                     // name
+      `on${buttonNum}`,         // name
       {                         // property decscription
         '@type': 'BooleanProperty',
+        label: `On/Off ${buttonNum}`,
         type: 'boolean',
         readOnly: true,
       },
@@ -511,13 +710,29 @@ class ZWaveClassifier {
     );
   }
 
-  addCentralSceneLevelProperty(node) {
+  addCentralSceneLevelProperty(node, buttonNum) {
+    if (buttonNum < 2) {
+      return this.addProperty(
+        node,                   // node
+        `level`,                // name
+        {                       // property decscription
+          '@type': 'LevelProperty',
+          label: 'Level',
+          type: 'number',
+          unit: 'percent',
+          minimum: 0,
+          maximum: 100,
+          readOnly: true,
+        },
+        null                    // valueId
+      );
+    }
     return this.addProperty(
       node,                   // node
-      `level`,                // name
+      `level${buttonNum}`,    // name
       {                       // property decscription
-        '@type': 'LevelProperty',
-        label: 'Level',
+        // '@type': 'LevelProperty',
+        label: `Level ${buttonNum}`,
         type: 'number',
         unit: 'percent',
         minimum: 0,
@@ -526,6 +741,81 @@ class ZWaveClassifier {
       },
       null                    // valueId
     );
+  }
+
+  addConfigBoolean(node, paramId, label) {
+    const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, paramId);
+    if (!valueId) {
+      console.error('addConfigBoolean:', node.id,
+                    'no config parameter with id:', paramId);
+      return;
+    }
+    const property = this.addProperty(
+      node,                 // node
+      `config-${paramId}`,  // name
+      {
+        label: label,
+        '@type': 'BooleanProperty',
+        type: 'boolean',
+      },
+      valueId,
+      'setConfigBooleanValue',
+      'parseConfigBooleanZwValue'
+    );
+    property.fireAndForget = true;
+    return property;
+  }
+
+  addConfigList(node, paramId, label) {
+    const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, paramId);
+    if (!valueId) {
+      console.error('addConfigBoolean:', node.id,
+                    'no config parameter with id:', paramId);
+      return;
+    }
+    const zwValue = node.zwValues[valueId];
+    if (!zwValue) {
+      console.error('addConfigBoolean:', node.id,
+                    'no zwValue for valueId:', valueId);
+      return;
+    }
+    const property = this.addProperty(
+      node,                 // node
+      `config-${paramId}`,  // name
+      {
+        label: label,
+        type: 'string',
+        enum: zwValue.values,
+      },
+      valueId,
+      'setConfigListValue',
+      'parseConfigListZwValue'
+    );
+    property.fireAndForget = true;
+    return property;
+  }
+
+  addConfigColorRGBX(node, paramId, label) {
+    const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, paramId);
+    if (!valueId) {
+      console.error('addConfigColorRGBX:', node.id,
+                    'no config parameter with id:', paramId);
+      return;
+    }
+    const property = this.addProperty(
+      node,                 // node
+      `config-${paramId}`,  // name
+      {
+        label: label,
+        '@type': 'ColorProperty',
+        type: 'string',
+      },
+      valueId,
+      'setConfigRGBXValue',
+      'parseConfigRGBXZwValue'
+    );
+    property.fireAndForget = true;
+    return property;
   }
 
   initSwitch(node, binarySwitchValueId, levelValueId, suffix) {
@@ -606,7 +896,7 @@ class ZWaveClassifier {
     }
 
     const powerValueId =
-      node.findValueId(COMMAND_CLASS_METER,
+      node.findValueId(COMMAND_CLASS.METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_POWER);
     if (powerValueId) {
@@ -628,7 +918,7 @@ class ZWaveClassifier {
     }
 
     const voltageValueId =
-      node.findValueId(COMMAND_CLASS_METER,
+      node.findValueId(COMMAND_CLASS.METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_VOLTAGE);
     if (voltageValueId) {
@@ -649,7 +939,7 @@ class ZWaveClassifier {
     }
 
     const currentValueId =
-      node.findValueId(COMMAND_CLASS_METER,
+      node.findValueId(COMMAND_CLASS.METER,
                        1,
                        METER_INDEX_ELECTRIC_INSTANT_CURRENT);
     if (currentValueId) {
@@ -673,20 +963,20 @@ class ZWaveClassifier {
     if (node.zwInfo.manufacturer === 'Aeotec') {
       // When the user presses the button, tell us about it
       node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
-                                  COMMAND_CLASS_CONFIGURATION, // classId
+                                  COMMAND_CLASS.CONFIGURATION, // classId
                                   1,                           // instance
                                   80,                          // index
                                   'Basic');                    // value
       if (node.type === Constants.THING_TYPE_SMART_PLUG) {
         // Enable METER reporting
         node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
-                                    COMMAND_CLASS_CONFIGURATION, // classId
+                                    COMMAND_CLASS.CONFIGURATION, // classId
                                     1,                           // instance
                                     90,                          // index
                                     1);                          // value
         // Report changes of 1 watt
         node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
-                                    COMMAND_CLASS_CONFIGURATION, // classId
+                                    COMMAND_CLASS.CONFIGURATION, // classId
                                     1,                           // instance
                                     91,                          // index
                                     1);                          // value

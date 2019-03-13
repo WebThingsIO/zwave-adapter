@@ -1,7 +1,7 @@
 {
   "name": "zwave-adapter",
   "display_name": "Z-Wave",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Z-Wave adapter plugin for Mozilla IoT Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
@@ -39,6 +39,7 @@
     "package.json",
     "zwave-adapter.js",
     "zwave-classifier.js",
+    "zwave-constants.js",
     "zwave-debug.js",
     "zwave-node.js",
     "zwave-property.js"

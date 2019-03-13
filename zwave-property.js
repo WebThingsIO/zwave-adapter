@@ -10,19 +10,11 @@
 
 'use strict';
 
-let Deferred, Property;
-try {
-  Deferred = require('../deferred');
-  Property = require('../property');
-} catch (e) {
-  if (e.code !== 'MODULE_NOT_FOUND') {
-    throw e;
-  }
-
-  const gwa = require('gateway-addon');
-  Deferred = gwa.Deferred;
-  Property = gwa.Property;
-}
+const Color = require('color');
+const {Deferred, Property} = require('gateway-addon');
+const {
+  COMMAND_CLASS,
+} = require('./zwave-constants');
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification". In the Notification Type and Event fields. These
@@ -106,6 +98,26 @@ class ZWaveProperty extends Property {
     return [tamper, tamper.toString()];
   }
 
+  parseConfigListZwValue(zwData) {
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue) {
+      const value = zwValue.value;
+      return [value, `${value} (zw: ${zwData})`];
+    }
+    return ['', `valueId: ${this.valueId} not found - using ''`];
+  }
+
+  parseConfigRGBXZwValue(zwData) {
+    const red = (zwData >> 24) & 0xff;
+    const green = (zwData >> 16) & 0xff;
+    const blue = (zwData >> 8) & 0xff;
+
+    const color = new Color({r: red, g: green, b: blue});
+    const colorStr = color.rgb().hex();
+
+    return [colorStr, `0x${zwData.toString(16)}`];
+  }
+
   parseIdentityValue(zwData) {
     const propertyValue = zwData;
     return [propertyValue, propertyValue.toString()];
@@ -136,6 +148,31 @@ class ZWaveProperty extends Property {
 
   parseZwValue(zwData) {
     return this.parseValueFromZwValue(zwData);
+  }
+
+  setConfigListValue(value) {
+    // For a list, the value will be a string. Find the matching
+    // string.
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue) {
+      const idx = zwValue.values.findIndex((cfgItem) => {
+        return cfgItem == value;
+      });
+      if (idx < 0) {
+        return [0, `${value} not found - using 0`];
+      }
+      return [idx, `${value} (${idx})`];
+    }
+    return [0, `valueId ${this.valueId} not found - using 0`];
+  }
+
+  setConfigRGBXValue(value) {
+    const color = new Color(value);
+    const rgb = color.rgb();
+
+    const zwData = (rgb.red() << 24) | (rgb.green() << 16) | (rgb.blue() << 8);
+
+    return [zwData, rgb.hex()];
   }
 
   setIdentityValue(propertyValue) {
@@ -225,9 +262,31 @@ class ZWaveProperty extends Property {
                 'valueId:', this.valueId,
                 'value:', logData);
 
-    this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
-                                       zwValue.instance, zwValue.index,
-                                       zwValueData);
+    if (zwValue.class_id == COMMAND_CLASS.CONFIGURATION) {
+      let size = 2;
+      switch (zwValue.type) {
+        case 'int':
+          size = 4;
+          break;
+        case 'list':
+          size = 1;
+          break;
+      }
+      this.device.adapter.zwave.setConfigParam(zwValue.node_id,
+                                               zwValue.index,
+                                               zwValueData,
+                                               size);
+
+      // Indicate that the property changed. It seems that we
+      // don't always get updates (in particular, changing the
+      // touch color of a wallmote doesn't send back the
+      // updated color).
+      this.device.notifyPropertyChanged(this);
+    } else {
+      this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
+                                         zwValue.instance, zwValue.index,
+                                         zwValueData);
+    }
     return deferredSet.promise;
   }
 }
