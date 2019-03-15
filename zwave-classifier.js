@@ -15,6 +15,7 @@ const ZWaveProperty = require('./zwave-property');
 const {Constants} = require('gateway-addon');
 
 const {
+  CENTRAL_SCENE,
   COMMAND_CLASS,
   GENERIC_TYPE,
   GENERIC_TYPE_STR,
@@ -46,9 +47,6 @@ const ALARM_INDEX_HOME_SECURITY = 10;
 
 // This would be from Battery.cpp, but it only has a single index.
 const BATTERY_INDEX_LEVEL = 0;
-
-// From cpp/src/command_classes/CentralScene.cpp#L51
-const CENTRAL_SCENE_COUNT = 0;
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification", Table 67 - Meter Table Capability Report.
@@ -294,7 +292,7 @@ class ZWaveClassifier {
     const centralSceneValueId =
       node.findValueId(COMMAND_CLASS.CENTRAL_SCENE,
                        1,
-                       CENTRAL_SCENE_COUNT);
+                       CENTRAL_SCENE.SCENE_COUNT);
     const temperatureValueId =
       node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
                        1,

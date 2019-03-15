@@ -16,6 +16,7 @@ const padRight = Utils.padRight;
 const repeatChar = Utils.repeatChar;
 
 const {
+  CENTRAL_SCENE,
   COMMAND_CLASS,
   GENERIC_TYPE_STR,
 } = require('./zwave-constants');
@@ -131,7 +132,9 @@ class ZWaveNode extends Device {
 
   getSceneCount() {
     const sceneCountValueId =
-      this.findValueId(COMMAND_CLASS.CENTRAL_SCENE, 1, 0);
+      this.findValueId(COMMAND_CLASS.CENTRAL_SCENE,
+                       1,
+                       CENTRAL_SCENE.SCENE_COUNT);
     if (sceneCountValueId) {
       return this.zwValues[sceneCountValueId].value;
     }
