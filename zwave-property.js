@@ -155,9 +155,7 @@ class ZWaveProperty extends Property {
     // string.
     const zwValue = this.device.zwValues[this.valueId];
     if (zwValue) {
-      const idx = zwValue.values.findIndex((cfgItem) => {
-        return cfgItem == value;
-      });
+      const idx = zwValue.values.indexOf(value);
       if (idx < 0) {
         return [0, `${value} not found - using 0`];
       }

@@ -289,16 +289,20 @@ class ZWaveAdapter extends Adapter {
         if (!property.valueId) {
           continue;
         }
-        switch (node.zwValues[property.valueId].class_id) {
+        const zwValue = node.zwValues[property.valueId];
+        if (!zwValue) {
+          continue;
+        }
+        switch (zwValue.class_id) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
             if (node.disablePoll) {
               // Polling is disabled by default, but his will cover
               // off the case where a device was previously set to poll
               // (which is remembered in the config file)
-              this.zwave.disablePoll(node.zwValues[property.valueId]);
+              this.zwave.disablePoll(zwValue);
             } else {
-              this.zwave.enablePoll(node.zwValues[property.valueId], 1);
+              this.zwave.enablePoll(zwValue, 1);
             }
             break;
         }

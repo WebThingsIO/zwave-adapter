@@ -173,13 +173,13 @@ function quirkMatches(quirk, node) {
   return match;
 }
 
-
 class ZWaveClassifier {
   classify(node) {
     DEBUG && console.log(`classify: called for ${node.id}`,
                          `name = ${node.name}`,
                          `defaultName = ${node.defaultName}`);
     this.classifyInternal(node);
+    node.classified = true;
 
     // Any type of device can be battery powered, so we do this check for
     // all devices.
@@ -230,9 +230,7 @@ class ZWaveClassifier {
             if (zwValue.type == 'list') {
               // For lists, the value contains the looked up string
               // rather than the index. Figure out the index.
-              const idx = zwValue.values.findIndex((cfgItem) => {
-                return cfgItem == zwValue.value;
-              });
+              const idx = zwValue.values.indexOf(zwValue.value);
               if (idx < 0) {
                 // This shouldn't happen. If it does it means that
                 // something in the config file has changed.
@@ -609,14 +607,12 @@ class ZWaveClassifier {
   }
 
   addSlideProperties(node) {
+    // The slide valueIds don't exist get added the first time a slide
+    // occurs, so we just add the correct valueIds.
     const slideStartValueId =
-      node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, 9);
+      node.makeValueId(COMMAND_CLASS.CONFIGURATION, 1, 9);
     const slideEndValueId =
-      node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, 10);
-
-    if (!slideStartValueId || !slideEndValueId) {
-      return;
-    }
+      node.makeValueId(COMMAND_CLASS.CONFIGURATION, 1, 10);
 
     node.slideStartProperty = this.addProperty(
       node,
@@ -777,13 +773,27 @@ class ZWaveClassifier {
                     'no zwValue for valueId:', valueId);
       return;
     }
+
+    // On the Dev branch of openzwave, the list items often have duplicated
+    // items on the list. So only include each value once.
+
+    const enumValues = [];
+    for (const value of zwValue.values) {
+      if (enumValues.indexOf(value) < 0) {
+        enumValues.push(value);
+      } else {
+        // We found a duplicate - stop adding
+        break;
+      }
+    }
+
     const property = this.addProperty(
       node,                 // node
       `config-${paramId}`,  // name
       {
         label: label,
         type: 'string',
-        enum: zwValue.values,
+        enum: enumValues,
       },
       valueId,
       'setConfigListValue',

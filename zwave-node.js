@@ -62,6 +62,7 @@ class ZWaveNode extends Device {
     this.lastStatus = 'constructed';
     this.disablePoll = false;
     this.canSleep = false;
+    this.classified = false;
   }
 
   asDict() {
@@ -122,6 +123,10 @@ class ZWaveNode extends Device {
     }
   }
 
+  makeValueId(commandClass, instance, index) {
+    return `${this.zwInfo.nodeId}-${commandClass}-${instance}-${index}`;
+  }
+
   findPropertyFromValueId(valueId) {
     for (const property of this.properties.values()) {
       if (property.valueId == valueId) {
@@ -145,11 +150,28 @@ class ZWaveNode extends Device {
     DEBUG && console.log('handleCentralSceneProperty:',
                          `node${this.zwInfo.nodeId}:`,
                          'value:', sceneProperty.value);
+
+    const valueId = sceneProperty.valueId;
+    const zwValue = this.zwValues[valueId];
+    const valueIdx = zwValue.values.indexOf(sceneProperty.value);
+    if (valueIdx < 0) {
+      // This shouldn't happen - just ignore it
+      console.error('handleCentralSceneProperty:',
+                    `node${this.zwInfo.nodeId}:`,
+                    `Unable to determine index of '${sceneProperty.value}'`,
+                    `for valueId ${valueId} - ignoring`);
+      return;
+    }
+
     const onProperty = sceneProperty.info.onProperty;
     const levelProperty = sceneProperty.info.levelProperty;
     const buttonNum = sceneProperty.info.buttonNum;
-    switch (sceneProperty.value) {
-      case 0:   // pressed & released (short press)
+    switch (valueIdx) {
+      case 0:   // Inactive
+        // It always evnetually enters this state after the other
+        // states. Currently we don't do anything.
+        break;
+      case 1:   // pressed & released (short press)
         DEBUG && console.log('handleCentralSceneProperty: press',
                              'pressAction:', sceneProperty.info.pressAction);
         switch (sceneProperty.info.pressAction) {
@@ -165,7 +187,7 @@ class ZWaveNode extends Device {
         }
         this.notifyEvent(`${buttonNum}-pressed`);
         break;
-      case 1:   // released (long press)
+      case 2:   // released (long press)
         DEBUG && console.log('handleCentralSceneProperty: release',
                              'moveDir:', sceneProperty.info.moveDir);
         if (sceneProperty.info.moveDir) {
@@ -174,7 +196,7 @@ class ZWaveNode extends Device {
         this.notifyEvent(`${buttonNum}-released`);
         sceneProperty.longPressed = false;
         break;
-      case 2: { // long pressed
+      case 3: { // long pressed
         DEBUG && console.log('handleCentralSceneProperty: longPress',
                              'moveDir:', sceneProperty.info.moveDir);
         if (sceneProperty.info.moveDir) {
@@ -368,6 +390,11 @@ class ZWaveNode extends Device {
         console.log('node%d valueAdded: %s:%s property: %s = %s%s',
                     this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
                     property.name, logValue, units);
+        if (this.classified) {
+          this.notifyPropertyChanged(property);
+        } else {
+          console.log('node not classified');
+        }
       }
     });
     if (!propertyFound && (zwValue.genre === 'user' || DEBUG)) {
