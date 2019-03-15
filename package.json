@@ -41,6 +41,7 @@
     "zwave-classifier.js",
     "zwave-constants.js",
     "zwave-debug.js",
+    "zwave-loader.sh",
     "zwave-node.js",
     "zwave-property.js"
   ],
@@ -51,7 +52,7 @@
     },
     "enabled": true,
     "plugin": true,
-    "exec": "{nodeLoader} {path}",
+    "exec": "{path}/zwave-loader.sh {nodeLoader} {path}",
     "config": {
       "networkKey": "",
       "debug": ""

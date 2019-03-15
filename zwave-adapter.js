@@ -53,6 +53,15 @@ class ZWaveAdapter extends Adapter {
       ConsoleOutput: false,
       UserPath: logDir,
     };
+    const configPath = path.join(__dirname, 'openzwave', 'config');
+    try {
+      if (fs.statSync(configPath).isDirectory()) {
+        zWaveModuleOptions.ConfigPath = configPath;
+      }
+    } catch (e) {
+      // This means that the directory doesn't exist, so we just won't
+      // add it to the config.
+    }
 
     /* eslint-disable max-len */
     /**

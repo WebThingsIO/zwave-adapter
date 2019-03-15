@@ -10,7 +10,9 @@
 
 'use strict';
 
+const child_process = require('child_process');
 const {Database} = require('gateway-addon');
+const path = require('path');
 const SerialPort = require('serialport');
 
 function isZWavePort(port) {
@@ -86,7 +88,6 @@ function findZWavePort(callback) {
 
 async function loadZWaveAdapters(addonManager, manifest, errorCallback) {
   let promise;
-
   if (Database) {
     const db = new Database(manifest.name);
     promise = db.open().then(() => {
@@ -99,6 +100,9 @@ async function loadZWaveAdapters(addonManager, manifest, errorCallback) {
 
       manifest.moziot.config = config;
       return db.saveConfig(config);
+    }).then(() => {
+      console.log('Closing database');
+      db.close();
     });
   } else {
     promise = Promise.resolve();
