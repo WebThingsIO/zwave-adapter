@@ -13,6 +13,9 @@ const path = require('path');
 const fs = require('fs');
 const ZWaveNode = require('./zwave-node');
 const zwaveClassifier = require('./zwave-classifier');
+const {
+  COMMAND_CLASS,
+} = require('./zwave-constants');
 
 const {Adapter} = require('gateway-addon');
 
@@ -241,7 +244,8 @@ class ZWaveAdapter extends Adapter {
 
       if (DEBUG_flow) {
         for (const comClass of node.zwClasses) {
-          console.log('node%d: class %d', nodeId, comClass);
+          const comClassStr = COMMAND_CLASS[comClass] || '';
+          console.log('node%d: class %d', nodeId, comClass, comClassStr);
           for (const valueId in node.zwValues) {
             const zwValue = node.zwValues[valueId];
             if (zwValue.class_id == comClass) {
@@ -395,9 +399,14 @@ class ZWaveAdapter extends Adapter {
 
   // eslint-disable-next-line no-unused-vars
   startPairing(timeoutSeconds) {
+    const msg = 'Press the inclusion button on the ZWave device to add';
     console.log('===============================================');
-    console.log('Press the Inclusion button on the device to add');
+    console.log(msg);
     console.log('===============================================');
+    if (this.sendPairingPrompt) {
+      console.log('Sending pairing prompt');
+      this.sendPairingPrompt(msg);
+    }
     this.zwave.addNode();
   }
 
@@ -412,21 +421,18 @@ class ZWaveAdapter extends Adapter {
    * @param {Object} device The device to remove.
    * @return {Promise} which resolves to the device removed.
    */
-  removeThing(device) {
+  removeThing(_device) {
     // ZWave can't really remove a particular thing.
+    const msg = 'Press the exclusion button on the ZWave device to remove';
     console.log('==================================================');
-    console.log('Press the Exclusion button on the device to remove');
+    console.log(msg);
     console.log('==================================================');
-    this.zwave.removeNode();
+    if (this.sendUnpairingPrompt) {
+      console.log('Sending unpairing prompt');
+      this.sendUnpairingPrompt(msg);
+    }
 
-    return new Promise((resolve, reject) => {
-      if (this.devices.hasOwnProperty(device.id)) {
-        this.handleDeviceRemoved(device);
-        resolve(device);
-      } else {
-        reject(`Device: ${device.id} not found.`);
-      }
-    });
+    this.zwave.removeNode();
   }
 
   // eslint-disable-next-line no-unused-vars
