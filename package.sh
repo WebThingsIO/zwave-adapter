@@ -20,10 +20,10 @@ else
 fi
 if [ "${ADDON_ARCH}" == "linux-arm" ]; then
   # We assume that CC and CXX are pointing to the cross compilers
-  yarn --ignore-scripts ${PRODUCTION}
+  npm install --ignore-scripts ${PRODUCTION}
   npm rebuild --arch=armv6l --target_arch=arm
 else
-  yarn install ${PRODUCTION}
+  npm install ${PRODUCTION}
 fi
 
 OZW_PKG="libopenzwave"
