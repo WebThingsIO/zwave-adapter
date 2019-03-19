@@ -425,7 +425,7 @@ class ZWaveAdapter extends Adapter {
    * @param {Object} device The device to remove.
    * @return {Promise} which resolves to the device removed.
    */
-  removeThing(_device) {
+  removeThing(device) {
     // ZWave can't really remove a particular thing.
     const msg = 'Press the exclusion button on the ZWave device to remove';
     console.log('==================================================');
@@ -433,7 +433,7 @@ class ZWaveAdapter extends Adapter {
     console.log('==================================================');
     if (this.sendUnpairingPrompt) {
       console.log('Sending unpairing prompt');
-      this.sendUnpairingPrompt(msg);
+      this.sendUnpairingPrompt(msg, null, device);
     }
 
     this.zwave.removeNode();

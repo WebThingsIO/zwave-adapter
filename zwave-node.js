@@ -168,7 +168,7 @@ class ZWaveNode extends Device {
     const buttonNum = sceneProperty.info.buttonNum;
     switch (valueIdx) {
       case 0:   // Inactive
-        // It always evnetually enters this state after the other
+        // It always eventually enters this state after the other
         // states. Currently we don't do anything.
         break;
       case 1:   // pressed & released (short press)
