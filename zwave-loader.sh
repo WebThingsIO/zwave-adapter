@@ -9,12 +9,21 @@ ZWAVE_ADAPTER_DIR="$3"
 
 OPENZWAVE_LIB_DIR="${ZWAVE_ADAPTER_DIR}/openzwave/lib"
 if [ -d "${OPENZWAVE_LIB_DIR}" ]; then
-  if [ -z "${LD_LIBRARY_PATH}" ]; then
-    LD_LIBRARY_PATH="${OPENZWAVE_LIB_DIR}"
+  if [ "$(uname)" = "Darwin" ]; then
+    if [ -z "${DYLD_LIBRARY_PATH}" ]; then
+      DYLD_LIBRARY_PATH="${OPENZWAVE_LIB_DIR}"
+    else
+      DYLD_LIBRARY_PATH="${OPENZWAVE_LIB_DIR}:${DYLD_LIBRARY_PATH}"
+    fi
+    export DYLD_LIBRARY_PATH
   else
-    LD_LIBRARY_PATH="${LD_LIBRARY_PATH}:${OPENZWAVE_LIB_DIR}"
+    if [ -z "${LD_LIBRARY_PATH}" ]; then
+      LD_LIBRARY_PATH="${OPENZWAVE_LIB_DIR}"
+    else
+      LD_LIBRARY_PATH="${OPENZWAVE_LIB_DIR}:${LD_LIBRARY_PATH}"
+    fi
+    export LD_LIBRARY_PATH
   fi
-  export LD_LIBRARY_PATH
 fi
 
 # Using exec replaces the current process with node
