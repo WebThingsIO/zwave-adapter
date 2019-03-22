@@ -24,6 +24,7 @@
     "url": "https://github.com/mozilla-iot/zwave-adapter/issues"
   },
   "dependencies": {
+    "color": "^3.0.0",
     "openzwave-shared": "^1.4.6",
     "serialport": "^7.0.2"
   },
