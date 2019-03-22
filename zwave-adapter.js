@@ -13,17 +13,11 @@ const path = require('path');
 const fs = require('fs');
 const ZWaveNode = require('./zwave-node');
 const zwaveClassifier = require('./zwave-classifier');
+const {
+  COMMAND_CLASS,
+} = require('./zwave-constants');
 
-let Adapter;
-try {
-  Adapter = require('../adapter');
-} catch (e) {
-  if (e.code !== 'MODULE_NOT_FOUND') {
-    throw e;
-  }
-
-  Adapter = require('gateway-addon').Adapter;
-}
+const {Adapter} = require('gateway-addon');
 
 const {
   DEBUG_flow,
@@ -62,6 +56,15 @@ class ZWaveAdapter extends Adapter {
       ConsoleOutput: false,
       UserPath: logDir,
     };
+    const configPath = path.join(__dirname, 'openzwave', 'config');
+    try {
+      if (fs.statSync(configPath).isDirectory()) {
+        zWaveModuleOptions.ConfigPath = configPath;
+      }
+    } catch (e) {
+      // This means that the directory doesn't exist, so we just won't
+      // add it to the config.
+    }
 
     /* eslint-disable max-len */
     /**
@@ -154,6 +157,7 @@ class ZWaveAdapter extends Adapter {
     if (node.nodeId > 1) {
       zwaveClassifier.classify(node);
       super.handleDeviceAdded(node);
+      this.writeConfigDeferred();
     }
   }
 
@@ -177,8 +181,8 @@ class ZWaveAdapter extends Adapter {
     }
     console.log('Scan complete');
     this.ready = true;
-    this.zwave.requestAllConfigParams(3);
     this.dump();
+    this.writeConfigDeferred();
   }
 
   nodeAdded(nodeId) {
@@ -239,12 +243,15 @@ class ZWaveAdapter extends Adapter {
       node.named = true;
 
       if (DEBUG_flow) {
-        for (const comClass in node.zwClasses) {
-          const zwClass = node.zwClasses[comClass];
-          console.log('node%d: class %d', nodeId, comClass);
-          for (const idx in zwClass) {
-            console.log('node%d:   %s=%s',
-                        nodeId, zwClass[idx].label, zwClass[idx].value);
+        for (const comClass of node.zwClasses) {
+          const comClassStr = COMMAND_CLASS[comClass] || '';
+          console.log('node%d: class %d', nodeId, comClass, comClassStr);
+          for (const valueId in node.zwValues) {
+            const zwValue = node.zwValues[valueId];
+            if (zwValue.class_id == comClass) {
+              console.log('node%d:   %s=%s',
+                          nodeId, zwValue.label, zwValue.value);
+            }
           }
         }
       }
@@ -260,6 +267,7 @@ class ZWaveAdapter extends Adapter {
     if (node) {
       node.lastStatus = 'removed';
       this.handleDeviceRemoved(node);
+      this.writeConfigDeferred();
     }
   }
 
@@ -274,19 +282,30 @@ class ZWaveAdapter extends Adapter {
       node.lastStatus = 'ready';
       node.ready = true;
 
+      if (nodeId in this.nodesBeingAdded) {
+        this.handleDeviceAdded(node);
+      }
       for (const property of node.properties.values()) {
         if (!property.valueId) {
           continue;
         }
-        switch (node.zwValues[property.valueId].class_id) {
+        const zwValue = node.zwValues[property.valueId];
+        if (!zwValue) {
+          continue;
+        }
+        switch (zwValue.class_id) {
           case 0x25: // COMMAND_CLASS_SWITCH_BINARY
           case 0x26: // COMMAND_CLASS_SWITCH_MULTILEVEL
-            this.zwave.enablePoll(node.zwValues[property.valueId], 1);
+            if (node.disablePoll) {
+              // Polling is disabled by default, but his will cover
+              // off the case where a device was previously set to poll
+              // (which is remembered in the config file)
+              this.zwave.disablePoll(zwValue);
+            } else {
+              this.zwave.enablePoll(zwValue, 1);
+            }
             break;
         }
-      }
-      if (nodeId in this.nodesBeingAdded) {
-        this.handleDeviceAdded(node);
       }
     }
   }
@@ -317,6 +336,7 @@ class ZWaveAdapter extends Adapter {
       case 4:
         console.log('node%d: node sleep', nodeId);
         lastStatus = 'sleeping';
+        node.canSleep = true;
         break;
       case 5:
         console.log('node%d: node dead', nodeId);
@@ -361,11 +381,36 @@ class ZWaveAdapter extends Adapter {
     }
   }
 
+  writeConfig() {
+    console.log('Writing ZWave configuration');
+    this.zwave.writeConfig();
+  }
+
+  writeConfigDeferred() {
+    // In order to reduce the number of times we rewrite the device info
+    // we defer writes for a time.
+    const timeoutSeconds = DEBUG_flow ? 1 : 120;
+
+    if (this.writeConfigTimeout) {
+      // already a timeout setup.
+      return;
+    }
+    this.writeConfigTimeout = setTimeout(() => {
+      this.writeConfigTimeout = null;
+      this.writeConfig();
+    }, timeoutSeconds * 1000);
+  }
+
   // eslint-disable-next-line no-unused-vars
   startPairing(timeoutSeconds) {
+    const msg = 'Press the inclusion button on the ZWave device to add';
     console.log('===============================================');
-    console.log('Press the Inclusion button on the device to add');
+    console.log(msg);
     console.log('===============================================');
+    if (this.sendPairingPrompt) {
+      console.log('Sending pairing prompt');
+      this.sendPairingPrompt(msg);
+    }
     this.zwave.addNode();
   }
 
@@ -382,19 +427,16 @@ class ZWaveAdapter extends Adapter {
    */
   removeThing(device) {
     // ZWave can't really remove a particular thing.
+    const msg = 'Press the exclusion button on the ZWave device to remove';
     console.log('==================================================');
-    console.log('Press the Exclusion button on the device to remove');
+    console.log(msg);
     console.log('==================================================');
-    this.zwave.removeNode();
+    if (this.sendUnpairingPrompt) {
+      console.log('Sending unpairing prompt');
+      this.sendUnpairingPrompt(msg, null, device);
+    }
 
-    return new Promise((resolve, reject) => {
-      if (this.devices.hasOwnProperty(device.id)) {
-        this.handleDeviceRemoved(device);
-        resolve(device);
-      } else {
-        reject(`Device: ${device.id} not found.`);
-      }
-    });
+    this.zwave.removeNode();
   }
 
   // eslint-disable-next-line no-unused-vars

@@ -1,7 +1,7 @@
 {
   "name": "zwave-adapter",
   "display_name": "Z-Wave",
-  "version": "0.7.0",
+  "version": "0.7.1",
   "description": "Z-Wave adapter plugin for Mozilla IoT Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
@@ -24,6 +24,7 @@
     "url": "https://github.com/mozilla-iot/zwave-adapter/issues"
   },
   "dependencies": {
+    "color": "^3.0.0",
     "openzwave-shared": "^1.4.6",
     "serialport": "^7.0.2"
   },
@@ -39,7 +40,9 @@
     "package.json",
     "zwave-adapter.js",
     "zwave-classifier.js",
+    "zwave-constants.js",
     "zwave-debug.js",
+    "zwave-loader.sh",
     "zwave-node.js",
     "zwave-property.js"
   ],
@@ -50,7 +53,7 @@
     },
     "enabled": true,
     "plugin": true,
-    "exec": "{nodeLoader} {path}",
+    "exec": "{path}/zwave-loader.sh {nodeLoader} {path}",
     "config": {
       "networkKey": "",
       "debug": ""

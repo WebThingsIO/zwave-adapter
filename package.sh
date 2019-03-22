@@ -1,5 +1,18 @@
 #!/bin/bash -e
 
+# For the Raspberry Pi, the version of node which was installed with the
+# 0.7.0 gateway clears LD_LIBRARY_PATH, which means that we need to use
+# a utility called patchelf. If we're building for the Pi, then verify
+# that it's been installed.
+if [ "${ADDON_ARCH}" == "linux-arm" ]; then
+  if [[ ! $(type -P patchelf) ]]; then
+    echo "patchelf utility doesn't seem to be installed."
+    # patchelf should be installed in our raspberry pi cross compiler
+    # docker image, so you shouldn't really see this error.
+    exit 1
+  fi
+fi
+
 # Make the C++ symbols be backwards compatible with gcc versions
 # prior to 5.1. In particular, the openzwave library suffers
 # from this problem.
@@ -20,20 +33,46 @@ else
 fi
 if [ "${ADDON_ARCH}" == "linux-arm" ]; then
   # We assume that CC and CXX are pointing to the cross compilers
-  yarn --ignore-scripts ${PRODUCTION}
+  npm install --ignore-scripts ${PRODUCTION}
   npm rebuild --arch=armv6l --target_arch=arm
 else
-  yarn install ${PRODUCTION}
+  npm install ${PRODUCTION}
+fi
+
+OZW_PKG="libopenzwave"
+OZW_DIR="openzwave"
+OZW_LIB_DIR="${OZW_DIR}/lib"
+OZW_CONFIG_DIR="${OZW_DIR}/config"
+OZW_LIB_VERSION="$(pkg-config --modversion ${OZW_PKG})"
+OZW_PKG_LIB_DIR="$(pkg-config --variable=libdir ${OZW_PKG})"
+
+if [ "${ADDON_ARCH}" == "darwin-x64" ]; then
+  OZW_LIB_NAME="${OZW_PKG_LIB_DIR}/libopenzwave-${OZW_LIB_VERSION}.dylib"
+else
+  OZW_LIB_NAME="${OZW_PKG_LIB_DIR}/libopenzwave.so.${OZW_LIB_VERSION}"
+fi
+
+rm -rf "${OZW_DIR}"
+mkdir -p "${OZW_LIB_DIR}" "${OZW_CONFIG_DIR}"
+cp -r "$(pkg-config --variable=sysconfdir ${OZW_PKG})/." "${OZW_CONFIG_DIR}/"
+cp "${OZW_LIB_NAME}" "${OZW_LIB_DIR}"
+
+if [ "${ADDON_ARCH}" == "linux-arm" ]; then
+  # Set rpath for the openzwave node module so that it will find our
+  # libopenzwave.so.1.x since LD_LIBRARY_PATH doesn't get passed through.
+  patchelf --set-rpath '$ORIGIN/../../../../openzwave/lib' node_modules/openzwave-shared/build/Release/openzwave_shared.node
 fi
 
 rm -f SHA256SUMS
 sha256sum package.json *.js LICENSE > SHA256SUMS
-find node_modules -type f -exec sha256sum {} \; >> SHA256SUMS
+find "node_modules" -type f -exec sha256sum {} \; >> SHA256SUMS
+find "${OZW_DIR}" -type f -exec sha256sum {} \; >> SHA256SUMS
 TARFILE="$(npm pack)"
 tar xzf ${TARFILE}
 rm ${TARFILE}
 TARFILE_ARCH="${TARFILE/.tgz/${TARFILE_SUFFIX}.tgz}"
-cp -r node_modules ./package
-tar czf ${TARFILE_ARCH} package
-rm -rf package
+cp -r "node_modules" "./package"
+cp -r "${OZW_DIR}" "./package"
+tar czf ${TARFILE_ARCH} "package"
+rm -rf "package"
 echo "Created ${TARFILE_ARCH}"
