@@ -31,7 +31,9 @@ else
   NODE_VERSION="$(node --version)"
   TARFILE_SUFFIX="-${ADDON_ARCH}-${NODE_VERSION/\.*/}"
 fi
-if [ "${ADDON_ARCH}" == "linux-arm" ]; then
+
+# For openwrt-linux-arm and linux-arm we need to cross compile.
+if [[ "${ADDON_ARCH}" =~ "linux-arm" ]]; then
   # We assume that CC and CXX are pointing to the cross compilers
   npm install --ignore-scripts ${PRODUCTION}
   npm rebuild --arch=armv6l --target_arch=arm
