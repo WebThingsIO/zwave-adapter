@@ -365,6 +365,7 @@ class ZWaveClassifier {
       }
 
       case GENERIC_TYPE.SENSOR_BINARY:
+      case GENERIC_TYPE.SENSOR_NOTIFICATION:
         this.initBinarySensor(node, binarySensorValueId);
         break;
 
