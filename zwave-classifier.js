@@ -45,6 +45,8 @@ const AEOTEC_ZW130_PRODUCT_ID = '0x0082'; // WallMote Quad
 // mentioned above).
 const ALARM_INDEX_HOME_SECURITY = 10;
 
+const ALARM_INDEX_ACCESS_CONTROL = 6;
+
 // This would be from Battery.cpp, but it only has a single index.
 const BATTERY_INDEX_LEVEL = 0;
 
@@ -283,6 +285,10 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS.ALARM,
                        1,
                        ALARM_INDEX_HOME_SECURITY);
+    const accessControlValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_ACCESS_CONTROL);
     const binarySensorValueId =
       node.findValueId(COMMAND_CLASS.SENSOR_BINARY,
                        1,
@@ -313,14 +319,15 @@ class ZWaveClassifier {
       console.log(`classify: called for node ${node.id},`,
                   `genericType = ${genericTypeStr}`,
                   `(0x${genericType.toString(16)})`);
-      console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
-      console.log('classify:   levelValueId        =', levelValueId);
-      console.log('classify:   binarySensorValueId =', binarySensorValueId);
-      console.log('classify:   centralSceneValueId =', centralSceneValueId);
-      console.log('classify:   alarmValueId        =', alarmValueId);
-      console.log('classify:   temperatureValueId  =', temperatureValueId);
-      console.log('classify:   luminanceValueId    =', luminanceValueId);
-      console.log('classify:   humidityValueId     =', humidityValueId);
+      console.log('classify:   binarySwitchValueId  =', binarySwitchValueId);
+      console.log('classify:   levelValueId         =', levelValueId);
+      console.log('classify:   binarySensorValueId  =', binarySensorValueId);
+      console.log('classify:   centralSceneValueId  =', centralSceneValueId);
+      console.log('classify:   alarmValueId         =', alarmValueId);
+      console.log('classify:   accessControlValueId =', accessControlValueId);
+      console.log('classify:   temperatureValueId   =', temperatureValueId);
+      console.log('classify:   luminanceValueId     =', luminanceValueId);
+      console.log('classify:   humidityValueId      =', humidityValueId);
     }
 
     node.type = 'thing';  // Just in case it doesn't classify as anything else
@@ -397,6 +404,10 @@ class ZWaveClassifier {
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
     }
+
+    if (accessControlValueId) {
+      this.addAccessControlProperty(node, accessControlValueId);
+    }
   }
 
   addEvents(node, events) {
@@ -426,6 +437,25 @@ class ZWaveClassifier {
                                        parseValueFromZwValue);
     node.properties.set(name, property);
     return property;
+  }
+
+  addAccessControlProperty(node, accessControlValueId) {
+    // TODO: add tamper support
+    this.addProperty(
+      node,
+      'open',
+      {
+        '@type': 'OpenProperty',
+        label: "Open",
+      },
+      accessControlValueId,
+      '',
+      'parseAccessControlZwValue'
+    );
+
+    if (!node['@type'].includes('DoorSensor')) {
+      node['@type'].push('DoorSensor');
+    }
   }
 
   addAlarmProperty(node, alarmValueId) {
@@ -998,6 +1028,8 @@ class ZWaveClassifier {
       node.type = Constants.THING_TYPE_BINARY_SENSOR;
       node['@type'] = ['BinarySensor'];
     }
+
+    // maybe don't add this if it's a door sensor?
     this.addProperty(
       node,                     // node
       'on',                     // name

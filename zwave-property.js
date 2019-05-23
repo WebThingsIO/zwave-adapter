@@ -82,6 +82,16 @@ class ZWaveProperty extends Property {
     return [motion, motion.toString()];
   }
 
+  parseAccessControlZwValue(zwData) {
+    // zwData for my door sensor can be:
+    // - Clear
+    // - Door/Window Open
+    // - Door/Window Closed
+    // (not sure if this is standard or device specific)
+    let open = !!zwData.match(/Open/i)
+    return [open, zwData]
+  }
+
   parseAlarmTamperZwValue(zwData) {
     let tamper = this.value;
     switch (zwData) {
