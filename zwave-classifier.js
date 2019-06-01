@@ -16,6 +16,8 @@ const {Constants} = require('gateway-addon');
 
 const {
   CENTRAL_SCENE,
+  COLOR_CAPABILITY,
+  COLOR_INDEX,
   COMMAND_CLASS,
   GENERIC_TYPE,
   GENERIC_TYPE_STR,
@@ -173,6 +175,15 @@ function quirkMatches(quirk, node) {
   return match;
 }
 
+function levelToHex(level) {
+  // level is excpected to be 0-100
+  // this returns 00-ff
+  const hexValue = Math.round(Math.min(255, Math.max(0, level * 255 / 100)));
+  const hexStr = ('00' + hexValue.toString(16)).substr(-2);
+  const newLevel = Math.round(hexValue * 100 / 255);
+  return [hexStr, newLevel];
+}
+
 class ZWaveClassifier {
   classify(node) {
     DEBUG && console.log(`classify: called for ${node.id}`,
@@ -271,6 +282,10 @@ class ZWaveClassifier {
 
     const genericType = zwave.getNodeGeneric(nodeId);
 
+    const colorCapabilitiesValueId =
+      node.findValueId(COMMAND_CLASS.COLOR,
+                       1,
+                       COLOR_INDEX.CAPABILITIES);
     const binarySwitchValueId =
       node.findValueId(COMMAND_CLASS.SWITCH_BINARY,
                        1,
@@ -313,6 +328,8 @@ class ZWaveClassifier {
       console.log(`classify: called for node ${node.id},`,
                   `genericType = ${genericTypeStr}`,
                   `(0x${genericType.toString(16)})`);
+      console.log('classify:   colorCapabilitiesValueId =',
+                  colorCapabilitiesValueId)
       console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
       console.log('classify:   levelValueId        =', levelValueId);
       console.log('classify:   binarySensorValueId =', binarySensorValueId);
@@ -333,6 +350,10 @@ class ZWaveClassifier {
       case GENERIC_TYPE.SWITCH_BINARY:
       case GENERIC_TYPE.SWITCH_MULTILEVEL:
       {
+        if (colorCapabilitiesValueId) {
+          this.initLight(node, colorCapabilitiesValueId, levelValueId);
+          return;
+        }
         // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
         // 1 and 2, and don't seem to work on instance 2. So we always
         // use instance 1 for the first outlet, and then 3 and beyond for the
@@ -424,6 +445,9 @@ class ZWaveClassifier {
                                        setZwValueFromValue,
                                        parseValueFromZwValue);
     node.properties.set(name, property);
+    if (name[0] == '_') {
+      property.visible = false;
+    }
     return property;
   }
 
@@ -824,6 +848,168 @@ class ZWaveClassifier {
     );
     property.fireAndForget = true;
     return property;
+  }
+
+  initLight(node, colorCapabilitiesValueId, levelValueId) {
+    node['@type'] = ['Light', 'OnOffSwitch'];
+
+    const colorCapabilityZwValue = node.zwValues[colorCapabilitiesValueId];
+    if (!colorCapabilityZwValue) {
+      return;
+    }
+    const colorCapability = colorCapabilityZwValue.value;
+
+    this.addProperty(
+      node,                     // node
+      'on',            // name
+      {                         // property decscription
+        '@type': 'OnOffProperty',
+        label: 'On/Off',
+        type: 'boolean',
+      },
+      levelValueId,             // valueId
+      'setOnOffLevelValue',     // setZwValueFromValue
+      'parseOnOffLevelZwValue'  // parseValueFromZwValue
+    );
+
+    const colorValueId = node.findValueId(COMMAND_CLASS.COLOR,
+                                          1,
+                                          COLOR_INDEX.COLOR);
+    node['@type'] = ['Light'];
+    const colorHexProperty = this.addProperty(
+      node,
+      '_colorHex',
+      {
+        label: 'ColorHex',
+        type: 'string',
+      },
+      colorValueId,
+      'setRRGGBBWWCWColorValue',
+      'parseRRGGBBWWCWColorValue'
+    );
+    colorHexProperty.fireAndForget = true;
+
+    let rgbColorProperty;
+    let warmColorProperty;
+    let coolColorProperty;
+
+    const rgbCapability = colorCapability & ((1 << COLOR_CAPABILITY.RED) |
+                                             (1 << COLOR_CAPABILITY.GREEN) |
+                                             (1 << COLOR_CAPABILITY.BLUE));
+    const warmCapability = colorCapability & (1 << COLOR_CAPABILITY.WARM_WHITE);
+    const coolCapability = colorCapability & (1 << COLOR_CAPABILITY.COOL_WHITE);
+
+    if (rgbCapability != 0) {
+      node['@type'].push('ColorControl');
+      rgbColorProperty = this.addProperty(
+        node,
+        'color',
+        {
+          '@type': 'ColorProperty',
+          label: 'Color',
+          type: 'string',
+        },
+        null,   // no associated valueId
+      );
+      rgbColorProperty.fireAndForget = true;
+      rgbColorProperty.updated = function() {
+        if (node.updatingColorHex) {
+          return;
+        }
+        node.updatingColorHex = true;
+        const zwData = this.value + '0000';
+        if (colorHexProperty.value != zwData) {
+          colorHexProperty.setValue(zwData);
+        }
+        node.updatingColorHex = false;
+      }
+    }
+
+    if (warmCapability != 0) {
+      warmColorProperty = this.addProperty(
+        node,
+        'warmLevel',
+        {
+          '@type': 'LevelProperty',
+          label: 'Warm Level',
+          type: 'number',
+          unit: 'percent',
+          minimum: 0,
+          maximum: 100,
+        },
+        null,   // no associated valueId
+      );
+      warmColorProperty.fireAndForget = true;
+      warmColorProperty.updated = function() {
+        if (node.updatingColorHex) {
+          return;
+        }
+        node.updatingColorHex = true;
+        const [hexStr, newLevel] = levelToHex(this.value);
+        this.value = newLevel;
+        const zwData = `#000000${hexStr}00`;
+        if (colorHexProperty.value != zwData) {
+          colorHexProperty.setValue(zwData);
+        }
+        node.updatingColorHex = false;
+      }
+    }
+
+    if (coolCapability != 0) {
+      coolColorProperty = this.addProperty(
+        node,
+        'coolLevel',
+        {
+          '@type': 'LevelProperty',
+          label: 'Cool Level',
+          type: 'number',
+          unit: 'percent',
+          minimum: 0,
+          maximum: 100,
+        },
+        null,   // no associated valueId
+      );
+      coolColorProperty.fireAndForget = true;
+      coolColorProperty.updated = function() {
+        if (node.updatingColorHex) {
+          return;
+        }
+        node.updatingColorHex = true;
+        const [hexStr, newLevel] = levelToHex(this.value);
+        this.value = newLevel;
+        const zwData = `#00000000${hexStr}`;
+        if (colorHexProperty.value != zwData) {
+          colorHexProperty.setValue(zwData)
+        }
+        node.updatingColorHex = false;
+      }
+    }
+
+    colorHexProperty.updated = function() {
+      if (rgbColorProperty) {
+        const newValue = this.value.substr(0, 7);
+        if (rgbColorProperty.value != newValue) {
+          rgbColorProperty.setValue(newValue);
+        }
+      }
+      if (warmColorProperty) {
+        const newValue = parseInt(this.value.substr(7, 2), 16) * 100 / 255;
+        if (warmColorProperty.value != newValue) {
+          warmColorProperty.setValue(newValue);
+        }
+      }
+      if (coolColorProperty) {
+        const newValue = parseInt(this.value.substr(9, 2), 16) * 100 / 255;
+        if (coolColorProperty.value != newValue) {
+          coolColorProperty.setValue(newValue);
+        }
+      }
+    }
+    // We should have a coleHexValue by the time the classifier is called.
+    // Call update to cause the other controls to get updated.
+    node.updatingColorHex = true;
+    colorHexProperty.updated();
+    node.updatingColorHex = false;
   }
 
   initSwitch(node, binarySwitchValueId, levelValueId, suffix) {

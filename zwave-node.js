@@ -307,7 +307,11 @@ class ZWaveNode extends Device {
     super.notifyPropertyChanged(property);
 
     if (property.hasOwnProperty('updated')) {
-      property.updated();
+      if (!property.updating) {
+        property.updating = true;
+        property.updated();
+        property.updating = false;
+      }
     }
 
     if (this.canSleep) {

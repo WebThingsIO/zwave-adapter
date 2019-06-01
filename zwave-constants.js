@@ -25,7 +25,7 @@ const COMMAND_CLASS = {
   SWITCH_ALL: 39,             // 0x27
   SENSOR_BINARY: 48,          // 0x30
   SENSOR_MULTILEVEL: 49,      // 0x31
-  ZIP_ADV_SERVER: 51,         // 0x33
+  COLOR: 51,                  // 0x33
   METER: 50,                  // 0x32
   CENTRAL_SCENE: 91,          // 0x5b
   ZWAVE_PLUS_INFO: 94,        // 0x5e
@@ -46,6 +46,26 @@ addInverseMap(COMMAND_CLASS);
 const CENTRAL_SCENE = {
   SCENE_COUNT: 256,       // 0x100
   TIMEOUT: 257,           // 0x101
+};
+
+// From cpp/src/command_classes/Color.cpp ValueIDSystemIndexes
+const COLOR_INDEX = {
+  COLOR: 0,
+  INDEX: 1,
+  CAPABILITIES: 2,
+  DURATION: 3
+};
+
+const COLOR_CAPABILITY = {
+  WARM_WHITE: 0,
+  COOL_WHITE: 1,
+  RED: 2,
+  GREEN: 3,
+  BLUE: 4,
+  // AMBER: 5,
+  // CYAN: 6,
+  // PURPLE: 7,
+  // INDEXED: 8,
 };
 
 const GENERIC_TYPE_STR = {
@@ -74,6 +94,8 @@ for (const [key, value] of entries) {
 module.exports = {
   COMMAND_CLASS,
   CENTRAL_SCENE,
+  COLOR_CAPABILITY,
+  COLOR_INDEX,
   GENERIC_TYPE,
   GENERIC_TYPE_STR,
 };
