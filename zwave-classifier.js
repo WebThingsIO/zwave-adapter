@@ -47,6 +47,60 @@ const AEOTEC_ZW130_PRODUCT_ID = '0x0082'; // WallMote Quad
 // mentioned above).
 const ALARM_INDEX_HOME_SECURITY = 10;
 
+// The following come from:
+// SDS13713 Notification Command Class, list of assigned Notifications.xlsx
+// and also from
+
+const NOTIFICATION_WATER_LEAK = 5;
+const NOTIFICATION_ACCESS_CONTROL = 6;
+const NOTIFICATION_HOME_SECURITY = 7;
+
+const NOTIFICATION_SENSOR = {
+  [NOTIFICATION_WATER_LEAK]: {  // 5
+    name: 'water',
+    '@type': ['LeakSensor'],
+    propertyName: 'on',
+    propertyDescr: {
+      '@type': 'LeakProperty',
+      type: 'boolean',
+      label: 'Water',
+      description: 'Water Sensor',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
+    addValueId2: true,
+  },
+  [NOTIFICATION_ACCESS_CONTROL]: {  // 6
+    name: 'switch',
+    '@type': ['DoorSensor'],
+    propertyName: 'open',
+    propertyDescr: {
+      '@type': 'OpenProperty',
+      type: 'boolean',
+      label: 'Open',
+      description: 'Contact Switch',
+      readOnly: true,
+    },
+    valueListMap: [false, true, false],
+  },
+};
+
+// These are additional sensors that aren't the main function of the sensor.
+const NOTIFICATION_SENSOR2 = {
+  [NOTIFICATION_HOME_SECURITY]: {  // 7
+    name: 'tamper',
+    propertyName: 'tamper',
+    propertyDescr: {
+      '@type': 'TamperProperty',
+      type: 'boolean',
+      label: 'Tamper',
+      description: 'Tamper Switch',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
+  },
+};
+
 // This would be from Battery.cpp, but it only has a single index.
 const BATTERY_INDEX_LEVEL = 0;
 
@@ -389,12 +443,19 @@ class ZWaveClassifier {
         this.initBinarySensor(node, binarySensorValueId);
         break;
 
+      case GENERIC_TYPE.SENSOR_NOTIFICATION:
+        this.initSensorNotification(node)
+        break;
+
       case GENERIC_TYPE.WALL_CONTROLLER:
         this.initCentralScene(node);
         break;
 
       default:
-        console.error(`Node: ${nodeId} unknown genericType: ${genericType}`);
+        let genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
+        console.error(`Node: ${nodeId}`,
+                      `unsupported genericType: ${genericType}`,
+                      `(${genericTypeStr})`);
         break;
     }
 
@@ -1012,6 +1073,52 @@ class ZWaveClassifier {
     node.updatingColorHex = false;
   }
 
+  initSensorNotification(node) {
+    const svName = node.name;
+    node.name = '';
+    this.addNotificationSensorProperties(node, NOTIFICATION_SENSOR);
+    this.addNotificationSensorProperties(node, NOTIFICATION_SENSOR2);
+    if (!node.name) {
+      node.name = svName;
+    }
+  }
+
+  addNotificationSensorProperties(node, sensors) {
+    for (const keyStr in sensors) {
+      const keyNum = parseInt(keyStr);
+      const valueId = node.findValueId(COMMAND_CLASS.ALARM, 1, keyNum);
+      if (!valueId) {
+        continue;
+      }
+      this.addNotificationSensorProperty(node, valueId, sensors[keyStr]);
+    }
+  }
+
+  addNotificationSensorProperty(node, valueId, sensor) {
+    if (!node.name) {
+      node.name = `${node.id}-${sensor.name}`;
+    }
+    if (sensor.hasOwnProperty('@type')) {
+      node['@type'] = sensor['@type'];
+    }
+    const property = this.addProperty(
+      node,
+      sensor.propertyName,
+      sensor.propertyDescr,
+      valueId,
+      null,
+      'parseZwValueListMap'
+    );
+    property.valueListMap = sensor.valueListMap;
+    if (sensor.addValueId2) {
+      const zwValue = node.zwValues[valueId];
+      const valueId2 = node.makeValueId(zwValue.class_id, 2, zwValue.index);
+      if (node.zwValues.hasOwnProperty(valueId2)) {
+        property.valueId2 = valueId2;
+      }
+    }
+  }
+
   initSwitch(node, binarySwitchValueId, levelValueId, suffix) {
     node['@type'] = ['OnOffSwitch'];
 
@@ -1181,16 +1288,27 @@ class ZWaveClassifier {
   initBinarySensor(node, binarySensorValueId) {
     if (node.properties.size == 0) {
       node.type = Constants.THING_TYPE_BINARY_SENSOR;
-      node['@type'] = ['BinarySensor'];
+      node['@type'] = ['DoorSensor', 'BinarySensor'];
     }
     this.addProperty(
       node,                     // node
       'on',                     // name
       {                         // property decscription
         '@type': 'BooleanProperty',
-        type: 'boolean',
+        readOnly: true,
       },
       binarySensorValueId       // valueId
+    );
+    this.addProperty(
+      node,
+      'open',
+      {
+        '@type': 'OpenProperty',
+        label: 'Open',
+        description: 'Contact Switch',
+        readOnly: true,
+      },
+      binarySensorValueId
     );
 
     if (node.type === 'thing' && node.name == node.defaultName) {

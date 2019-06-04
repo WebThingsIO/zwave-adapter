@@ -68,20 +68,34 @@ const COLOR_CAPABILITY = {
   // INDEXED: 8,
 };
 
+// These come from the SDS14224-Z-Wave-Plus-v2-Device-Type-Specification.pdf
+// docuemmmmt. Under https://www.silabs.com/documents/login/miscellaneous/
 const GENERIC_TYPE_STR = {
   0x01: 'Generic Controller',
   0x02: 'Static Controller',
   0x03: 'AV Controller',
+  0x04: 'Display',
+  0x05: 'Network Extender',
+  0x06: 'Appliance',
   0x07: 'Sensor Notification',
   0x08: 'Thermostat',
+  0x09: 'Window Covering',
   0x0F: 'Repeater Slave',
   0x10: 'Switch Binary',
   0x11: 'Switch MultiLevel',
+  0x12: 'Switch Remote',
+  0x13: 'Switch Toggle',
+  0x15: 'Zip Node',
+  0x16: 'Ventilation',
+  0x17: 'Security Panel',
   0x18: 'Wall Controller',
   0x20: 'Sensor Binary',
   0x21: 'Sensor MultiLevel',
+  0x30: 'Meter Pulse',
   0x31: 'Meter',
   0x40: 'Entry Control',
+  0x50: 'Semi Interoperable',
+  0xA1: 'Sensor Alarm',
 };
 
 const GENERIC_TYPE = {};

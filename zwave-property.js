@@ -161,6 +161,20 @@ class ZWaveProperty extends Property {
     return this.parseValueFromZwValue(zwData);
   }
 
+  parseZwValueListMap(zwData) {
+    let value = false;
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue && zwValue.hasOwnProperty('values')) {
+      const valueIdx = zwValue.values.indexOf(zwData);
+      if (valueIdx >= 0 &&
+          this.hasOwnProperty('valueListMap') &&
+          valueIdx < this.valueListMap.length) {
+        value = this.valueListMap[valueIdx];
+      }
+    }
+    return [value, zwData.value];
+  }
+
   setRRGGBBWWCWColorValue(value) {
     return [value, value];
   }

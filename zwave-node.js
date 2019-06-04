@@ -428,9 +428,23 @@ class ZWaveNode extends Device {
 
     let propertyFound = false;
     this.properties.forEach((property) => {
-      if (property.valueId == zwValue.value_id) {
+      if (property.valueId == zwValue.value_id ||
+          property.valueId2 == zwValue.value_id) {
         propertyFound = true;
-        const [value, logValue] = property.parseZwValue(zwValue.value);
+        let value;
+        let logValue;
+        if (property.valueId2) {
+          // The Aeotect Water leak sensor has 2 instances. We basically
+          // or the results together.
+          const [value1, logValue1] =
+            property.parseZwValue(this.zwValues[property.valueId].value);
+          const [value2, logValue2] =
+            property.parseZwValue(this.zwValues[property.valueId2].value);
+          value = value1 || value2;
+          logValue = `(1:${logValue1} 2:${logValue2})`;
+        } else {
+          [value, logValue] = property.parseZwValue(zwValue.value);
+        }
         property.setCachedValue(value);
         console.log('node%d valueChanged: %s:%s property: %s = %s%s',
                     this.zwInfo.nodeId, zwValue.value_id, zwValue.label,
