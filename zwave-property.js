@@ -107,6 +107,17 @@ class ZWaveProperty extends Property {
     return ['', `valueId: ${this.valueId} not found - using ''`];
   }
 
+  parseRRGGBBWWCWColorValue(zwData) {
+    if (typeof this.value !== 'undefined') {
+      // The Aeotec LED Strip never returns the value that was set
+      // so we set fireAndForget to true (in the classifier) and ignore
+      // updates.
+      console.log('parseRRGGBBWWCWColorValue: zwData =', zwData, '(ignoring)');
+      zwData = this.value;
+    }
+    return [zwData, zwData];
+  }
+
   parseConfigRGBXZwValue(zwData) {
     const red = (zwData >> 24) & 0xff;
     const green = (zwData >> 16) & 0xff;
@@ -150,6 +161,24 @@ class ZWaveProperty extends Property {
     return this.parseValueFromZwValue(zwData);
   }
 
+  parseZwValueListMap(zwData) {
+    let value = false;
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue && zwValue.hasOwnProperty('values')) {
+      const valueIdx = zwValue.values.indexOf(zwData);
+      if (valueIdx >= 0 &&
+          this.hasOwnProperty('valueListMap') &&
+          valueIdx < this.valueListMap.length) {
+        value = this.valueListMap[valueIdx];
+      }
+    }
+    return [value, zwData.value];
+  }
+
+  setRRGGBBWWCWColorValue(value) {
+    return [value, value];
+  }
+
   setConfigListValue(value) {
     // For a list, the value will be a string. Find the matching
     // string.
@@ -176,6 +205,20 @@ class ZWaveProperty extends Property {
   setIdentityValue(propertyValue) {
     const zwData = propertyValue;
     return [zwData, zwData.toString()];
+  }
+
+  setListValue(value) {
+    // For a list, the value will be a string. Find the matching
+    // string.
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue) {
+      const idx = zwValue.values.indexOf(value);
+      if (idx < 0) {
+        return [0, `${value} not found - using 0`];
+      }
+      return [idx, `${value} (${idx})`];
+    }
+    return [0, `valueId ${this.valueId} not found - using 0`];
   }
 
   /**
@@ -237,13 +280,14 @@ class ZWaveProperty extends Property {
     }
 
     if (!this.valueId) {
-      deferredSet.reject(
-        `setProperty property ${this.name} for node ${this.device.id
-        } doesn't have a valueId`);
+      // This happens for "fake" properties which interact with real
+      // properties.
+      this.setCachedValue(propertyValue);
+      this.device.notifyPropertyChanged(this);
       return deferredSet.promise;
     }
-    const zwValue = this.device.zwValues[this.valueId];
 
+    const zwValue = this.device.zwValues[this.valueId];
     if (zwValue.read_only) {
       deferredSet.reject(
         `setProperty property ${this.name} for node ${this.device.id
@@ -284,6 +328,9 @@ class ZWaveProperty extends Property {
       this.device.adapter.zwave.setValue(zwValue.node_id, zwValue.class_id,
                                          zwValue.instance, zwValue.index,
                                          zwValueData);
+      if (this.fireAndForget) {
+        this.device.notifyPropertyChanged(this);
+      }
     }
     return deferredSet.promise;
   }

@@ -25,7 +25,7 @@ const COMMAND_CLASS = {
   SWITCH_ALL: 39,             // 0x27
   SENSOR_BINARY: 48,          // 0x30
   SENSOR_MULTILEVEL: 49,      // 0x31
-  ZIP_ADV_SERVER: 51,         // 0x33
+  COLOR: 51,                  // 0x33
   METER: 50,                  // 0x32
   CENTRAL_SCENE: 91,          // 0x5b
   ZWAVE_PLUS_INFO: 94,        // 0x5e
@@ -48,20 +48,54 @@ const CENTRAL_SCENE = {
   TIMEOUT: 257,           // 0x101
 };
 
+// From cpp/src/command_classes/Color.cpp ValueIDSystemIndexes
+const COLOR_INDEX = {
+  COLOR: 0,
+  INDEX: 1,
+  CAPABILITIES: 2,
+  DURATION: 3
+};
+
+const COLOR_CAPABILITY = {
+  WARM_WHITE: 0,
+  COOL_WHITE: 1,
+  RED: 2,
+  GREEN: 3,
+  BLUE: 4,
+  // AMBER: 5,
+  // CYAN: 6,
+  // PURPLE: 7,
+  // INDEXED: 8,
+};
+
+// These come from the SDS14224-Z-Wave-Plus-v2-Device-Type-Specification.pdf
+// docuemmmmt. Under https://www.silabs.com/documents/login/miscellaneous/
 const GENERIC_TYPE_STR = {
   0x01: 'Generic Controller',
   0x02: 'Static Controller',
   0x03: 'AV Controller',
+  0x04: 'Display',
+  0x05: 'Network Extender',
+  0x06: 'Appliance',
   0x07: 'Sensor Notification',
   0x08: 'Thermostat',
+  0x09: 'Window Covering',
   0x0F: 'Repeater Slave',
   0x10: 'Switch Binary',
   0x11: 'Switch MultiLevel',
+  0x12: 'Switch Remote',
+  0x13: 'Switch Toggle',
+  0x15: 'Zip Node',
+  0x16: 'Ventilation',
+  0x17: 'Security Panel',
   0x18: 'Wall Controller',
   0x20: 'Sensor Binary',
   0x21: 'Sensor MultiLevel',
+  0x30: 'Meter Pulse',
   0x31: 'Meter',
   0x40: 'Entry Control',
+  0x50: 'Semi Interoperable',
+  0xA1: 'Sensor Alarm',
 };
 
 const GENERIC_TYPE = {};
@@ -74,6 +108,8 @@ for (const [key, value] of entries) {
 module.exports = {
   COMMAND_CLASS,
   CENTRAL_SCENE,
+  COLOR_CAPABILITY,
+  COLOR_INDEX,
   GENERIC_TYPE,
   GENERIC_TYPE_STR,
 };
