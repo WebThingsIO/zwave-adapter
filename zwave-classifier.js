@@ -51,11 +51,25 @@ const ALARM_INDEX_HOME_SECURITY = 10;
 // SDS13713 Notification Command Class, list of assigned Notifications.xlsx
 // and also from
 
+const NOTIFICATION_SMOKE_DETECTOR = 1;
 const NOTIFICATION_WATER_LEAK = 5;
 const NOTIFICATION_ACCESS_CONTROL = 6;
 const NOTIFICATION_HOME_SECURITY = 7;
 
 const NOTIFICATION_SENSOR = {
+  [NOTIFICATION_SMOKE_DETECTOR]: {  // 1
+    name: 'smoke',
+    '@type': ['Alarm'],
+    propertyName: 'on',
+    propertyDescr: {
+      '@type': 'AlarmProperty',
+      type: 'boolean',
+      label: 'Smoke',
+      description: 'Smoke Detector',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
+  },
   [NOTIFICATION_WATER_LEAK]: {  // 5
     name: 'water',
     '@type': ['LeakSensor'],
