@@ -1,10 +1,34 @@
 #!/bin/bash -e
 
+if [ -z "${ADDON_ARCH}" ]; then
+  # This means we're running locally. Fake out ADDON_ARCH.
+  # This happens when you run ./package.sh locally
+  UNAME=$(uname -s)
+  case "$(uname -s)" in
+
+    Linux)
+      ADDON_ARCH=linux-x64
+      ;;
+
+    Darwin)
+      ADDON_ARCH=darwin-x64
+      ;;
+
+    *)
+      echo "Unrecognized uname -s: ${UNAME}"
+      exit 1
+      ;;
+  esac
+  echo "Faking ADDON_ARCH = ${ADDON_ARCH}"
+else
+  echo "ADDON_ARCH = ${ADDON_ARCH}"
+fi
+
 # For the Raspberry Pi, the version of node which was installed with the
 # 0.7.0 gateway clears LD_LIBRARY_PATH, which means that we need to use
 # a utility called patchelf. If we're building for the Pi, then verify
 # that it's been installed.
-if [ "${ADDON_ARCH}" == "linux-arm" ]; then
+if [[ "${ADDON_ARCH}" =~ "linux" ]]; then
   if [[ ! $(type -P patchelf) ]]; then
     echo "patchelf utility doesn't seem to be installed."
     # patchelf should be installed in our raspberry pi cross compiler
@@ -59,9 +83,10 @@ mkdir -p "${OZW_LIB_DIR}" "${OZW_CONFIG_DIR}"
 cp -r "$(pkg-config --variable=sysconfdir ${OZW_PKG})/." "${OZW_CONFIG_DIR}/"
 cp "${OZW_LIB_NAME}" "${OZW_LIB_DIR}"
 
-if [ "${ADDON_ARCH}" == "linux-arm" ]; then
+if [[ "${ADDON_ARCH}" =~ "linux" ]]; then
   # Set rpath for the openzwave node module so that it will find our
   # libopenzwave.so.1.x since LD_LIBRARY_PATH doesn't get passed through.
+  echo "Patching node-openzwave-shared"
   patchelf --set-rpath '$ORIGIN/../../../../openzwave/lib' node_modules/openzwave-shared/build/Release/openzwave_shared.node
 fi
 
