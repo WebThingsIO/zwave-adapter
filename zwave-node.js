@@ -31,6 +31,7 @@ const BASIC_STR = [
 
 const {
   DEBUG_node,
+  DEBUG_valueId,
 } = require('./zwave-debug');
 const DEBUG = DEBUG_node;
 
@@ -375,6 +376,9 @@ class ZWaveNode extends Device {
   }
 
   zwValueAdded(comClass, zwValue) {
+    if (DEBUG_valueId) {
+      console.log(zwValue);
+    }
     this.lastStatus = 'value-added';
     if (this.zwClasses.indexOf(comClass) < 0) {
       this.zwClasses.push(comClass);
