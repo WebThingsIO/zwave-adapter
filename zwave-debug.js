@@ -22,7 +22,7 @@ const DEBUG_FLAG = {
   DEBUG_node: false,
 
   // DEBUG_valueId causes value-added valueId's to be printed.
-  DEBUG_valueId,
+  DEBUG_valueId: false,
 
   set: function(names) {
     for (const name of names.split(/[, ]+/)) {
