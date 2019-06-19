@@ -175,6 +175,7 @@ const QUIRKS = [
       // changes.
       {paramId: 80, value: 2, size: 1},
     ],
+    isLight: false,
   },
   {
     // Aeotec Smart Dimmer 6
@@ -189,6 +190,7 @@ const QUIRKS = [
       // changes.
       {paramId: 80, value: 2, size: 1},
     ],
+    isLight: false,
   },
   {
     // The Aeotec ZW100 says it supports the SENSOR_BINARY command class,
@@ -292,6 +294,10 @@ class ZWaveClassifier {
         console.log(`Device ${node.id}`,
                     `Setting disablePoll to ${quirk.disablePoll}`);
         node.disablePoll = quirk.disablePoll;
+      }
+
+      if (quirk.hasOwnProperty('isLight')) {
+        node.isLight = quirk.isLight;
       }
 
       if (!quirk.hasOwnProperty('setConfigs')) {
@@ -406,6 +412,7 @@ class ZWaveClassifier {
       console.log('classify:   temperatureValueId  =', temperatureValueId);
       console.log('classify:   luminanceValueId    =', luminanceValueId);
       console.log('classify:   humidityValueId     =', humidityValueId);
+      console.log('classify:   quirk.isLight       =', node.isLight);
     }
 
     node.type = 'thing';  // Just in case it doesn't classify as anything else
@@ -418,9 +425,13 @@ class ZWaveClassifier {
       case GENERIC_TYPE.SWITCH_BINARY:
       case GENERIC_TYPE.SWITCH_MULTILEVEL:
       {
+        // The Aeotec Smart Switch 6 and Smart Dimmer 6 have color capabilities
+        // but aren't lights.
         if (colorCapabilitiesValueId) {
-          this.initLight(node, colorCapabilitiesValueId, levelValueId);
-          return;
+          if (!node.hasOwnProperty('isLight') || node.isLight) {
+            this.initLight(node, colorCapabilitiesValueId, levelValueId);
+            return;
+          }
         }
         // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
         // 1 and 2, and don't seem to work on instance 2. So we always
