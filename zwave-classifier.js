@@ -355,6 +355,13 @@ class ZWaveClassifier {
     }
 
     const genericType = zwave.getNodeGeneric(nodeId);
+    node.zwInfo.genericType = genericType;
+
+    const basicType = zwave.getNodeBasic(nodeId);
+    node.zwInfo.basicType = basicType;
+
+    const specificType = zwave.getNodeSpecific(nodeId);
+    node.zwInfo.specificType = specificType;
 
     const colorCapabilitiesValueId =
       node.findValueId(COMMAND_CLASS.COLOR,

@@ -6,7 +6,8 @@
   "author": "Mozilla IoT",
   "main": "index.js",
   "scripts": {
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "jest": "jest"
   },
   "keywords": [
     "mozilla",
@@ -31,7 +32,9 @@
   "devDependencies": {
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
-    "eslint-plugin-html": "^5.0.5"
+    "eslint-plugin-html": "^5.0.5",
+    "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
+    "jest": "^24.6"
   },
   "files": [
     "LICENSE",
@@ -71,5 +74,15 @@
         }
       }
     }
+  },
+  "jest": {
+    "coverageDirectory": "./coverage/",
+    "moduleFileExtensions": [
+      "js"
+    ],
+    "testMatch": [
+      "**/test/**/*-test.js"
+    ],
+    "testEnvironment": "node"
   }
 }

@@ -389,16 +389,21 @@ class ZWaveAdapter extends Adapter {
   writeConfigDeferred() {
     // In order to reduce the number of times we rewrite the device info
     // we defer writes for a time.
-    const timeoutSeconds = DEBUG_flow ? 1 : 120;
 
-    if (this.writeConfigTimeout) {
-      // already a timeout setup.
-      return;
-    }
-    this.writeConfigTimeout = setTimeout(() => {
-      this.writeConfigTimeout = null;
+    if (DEBUG_flow || process.env.NODE_ENV === 'test') {
       this.writeConfig();
-    }, timeoutSeconds * 1000);
+    } else {
+      const timeoutSeconds = 120;
+
+      if (this.writeConfigTimeout) {
+        // already a timeout setup.
+        return;
+      }
+      this.writeConfigTimeout = setTimeout(() => {
+        this.writeConfigTimeout = null;
+        this.writeConfig();
+      }, timeoutSeconds * 1000);
+    }
   }
 
   // eslint-disable-next-line no-unused-vars
