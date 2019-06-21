@@ -97,6 +97,19 @@ const NOTIFICATION_SENSOR = {
     },
     valueListMap: [false, true, false],
   },
+  [NOTIFICATION_HOME_SECURITY]: {  // 7
+    name: 'motion',
+    '@type': ['MotionSensor'],
+    propertyName: 'motion',
+    propertyDescr: {
+      '@type': 'MotionProperty',
+      type: 'boolean',
+      label: 'Motion',
+      description: 'MotionDetected',
+      readOnly: true,
+    },
+    valueMap: ['Clear', 'Motion'],
+  },
 };
 
 // These are additional sensors that aren't the main function of the sensor.
@@ -111,7 +124,7 @@ const NOTIFICATION_SENSOR2 = {
       description: 'Tamper Switch',
       readOnly: true,
     },
-    valueListMap: [false, true],
+    valueMap: ['Clear', 'Tamper'],
   },
 };
 
@@ -1117,12 +1130,52 @@ class ZWaveClassifier {
 
   addNotificationSensorProperties(node, sensors) {
     for (const keyStr in sensors) {
+      const sensor = sensors[keyStr];
       const keyNum = parseInt(keyStr);
       const valueId = node.findValueId(COMMAND_CLASS.ALARM, 1, keyNum);
       if (!valueId) {
         continue;
       }
-      this.addNotificationSensorProperty(node, valueId, sensors[keyStr]);
+      if (sensor.hasOwnProperty('valueMap')) {
+        // Some valueIds map to multiple properties. For example tamper and
+        // motion both get encoded into the X-113-1-7 valueId, like:
+        //
+        // "values": [
+        //   "Clear",
+        //   "Tampering -  Cover Removed",
+        //   "Motion Detected at Unknown Location"
+        // ],
+        //
+        // So we check to see if the property we're trying to add has
+        // all of the needed values. The tamper property would be looking
+        // for 'Clear' and 'Tamper" where the motion property would be
+        // looking for 'Clear' and 'Motion'.
+        const zwValue = node.zwValues[valueId];
+        if (!zwValue || !zwValue.values) {
+          continue;
+        }
+        // Check the values and see if everything needed to support
+        // the property is present.
+        let match = true;
+        for (const mapEntry of sensor.valueMap) {
+          let found = false;
+          for (const value of zwValue.values) {
+            if (value.startsWith(mapEntry)) {
+              found = true;
+              break;
+            }
+          }
+          if (!found) {
+            match = false;
+            break;
+          }
+        }
+        if (match) {
+          this.addNotificationSensorProperty(node, valueId, sensor);
+        }
+      } else {
+        this.addNotificationSensorProperty(node, valueId, sensor);
+      }
     }
   }
 
@@ -1131,23 +1184,35 @@ class ZWaveClassifier {
       node.name = `${node.id}-${sensor.name}`;
     }
     if (sensor.hasOwnProperty('@type')) {
-      node['@type'] = sensor['@type'];
+      node['@type'] = [].concat(sensor['@type']);
     }
-    const property = this.addProperty(
-      node,
-      sensor.propertyName,
-      sensor.propertyDescr,
-      valueId,
-      null,
-      'parseZwValueListMap'
-    );
-    property.valueListMap = sensor.valueListMap;
-    if (sensor.addValueId2) {
-      const zwValue = node.zwValues[valueId];
-      const valueId2 = node.makeValueId(zwValue.class_id, 2, zwValue.index);
-      if (node.zwValues.hasOwnProperty(valueId2)) {
-        property.valueId2 = valueId2;
+    if (sensor.hasOwnProperty('valueListMap')) {
+      const property = this.addProperty(
+        node,
+        sensor.propertyName,
+        sensor.propertyDescr,
+        valueId,
+        null,
+        'parseZwValueListMap'
+      );
+      property.valueListMap = sensor.valueListMap;
+      if (sensor.addValueId2) {
+        const zwValue = node.zwValues[valueId];
+        const valueId2 = node.makeValueId(zwValue.class_id, 2, zwValue.index);
+        if (node.zwValues.hasOwnProperty(valueId2)) {
+          property.valueId2 = valueId2;
+        }
       }
+    } else if (sensor.hasOwnProperty('valueMap')) {
+      const property = this.addProperty(
+        node,
+        sensor.propertyName,
+        sensor.propertyDescr,
+        valueId,
+        null,
+        'parseZwValueMap'
+      );
+      property.valueMap = sensor.valueMap;
     }
   }
 
