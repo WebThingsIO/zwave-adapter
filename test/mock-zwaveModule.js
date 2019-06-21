@@ -6,15 +6,15 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.*
  */
 
- 'use strict';
+'use strict';
 
- const EventEmitter = require('events').EventEmitter;
+const EventEmitter = require('events').EventEmitter;
 
 class MockZWaveModule extends EventEmitter {
   constructor(options) {
     super();
     this.options = options;
-    this.nodes = {}
+    this.nodes = {};
   }
 
   addNode(node) {
@@ -44,10 +44,10 @@ class MockZWaveModule extends EventEmitter {
     console.log('MockZWaveModule: connect', portName);
   }
 
-  disablePoll(zwValue) {
+  disablePoll(_zwValue) {
   }
 
-  enablePoll(zwValue, intensity) {
+  enablePoll(_zwValue, _intensity) {
   }
 
   getNodeBasic(nodeId) {
@@ -71,7 +71,7 @@ class MockZWaveModule extends EventEmitter {
     }
   }
 
-  setConfigParam(nodeId, paramId, value, size) {
+  setConfigParam(_nodeId, _paramId, _value, _size) {
   }
 
   scanComplete() {
