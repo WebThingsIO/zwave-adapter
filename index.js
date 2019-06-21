@@ -10,9 +10,7 @@
 
 'use strict';
 
-const child_process = require('child_process');
 const {Database} = require('gateway-addon');
-const path = require('path');
 const SerialPort = require('serialport');
 
 function isZWavePort(port) {

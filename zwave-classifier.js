@@ -262,7 +262,7 @@ function levelToHex(level) {
   // level is excpected to be 0-100
   // this returns 00-ff
   const hexValue = Math.round(Math.min(255, Math.max(0, level * 255 / 100)));
-  const hexStr = ('00' + hexValue.toString(16)).substr(-2);
+  const hexStr = `00${hexValue.toString(16)}`.substr(-2);
   const newLevel = Math.round(hexValue * 100 / 255);
   return [hexStr, newLevel];
 }
@@ -423,7 +423,7 @@ class ZWaveClassifier {
                   `genericType = ${genericTypeStr}`,
                   `(0x${genericType.toString(16)})`);
       console.log('classify:   colorCapabilitiesValueId =',
-                  colorCapabilitiesValueId)
+                  colorCapabilitiesValueId);
       console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
       console.log('classify:   levelValueId        =', levelValueId);
       console.log('classify:   binarySensorValueId =', binarySensorValueId);
@@ -489,19 +489,20 @@ class ZWaveClassifier {
         break;
 
       case GENERIC_TYPE.SENSOR_NOTIFICATION:
-        this.initSensorNotification(node)
+        this.initSensorNotification(node);
         break;
 
       case GENERIC_TYPE.WALL_CONTROLLER:
         this.initCentralScene(node);
         break;
 
-      default:
-        let genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
+      default: {
+        const genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
         console.error(`Node: ${nodeId}`,
                       `unsupported genericType: ${genericType}`,
                       `(${genericTypeStr})`);
         break;
+      }
     }
 
     if (alarmValueId) {
@@ -1023,12 +1024,12 @@ class ZWaveClassifier {
           return;
         }
         node.updatingColorHex = true;
-        const zwData = this.value + '0000';
+        const zwData = `${this.value}0000`;
         if (colorHexProperty.value != zwData) {
           colorHexProperty.setValue(zwData);
         }
         node.updatingColorHex = false;
-      }
+      };
     }
 
     if (warmCapability != 0) {
@@ -1058,7 +1059,7 @@ class ZWaveClassifier {
           colorHexProperty.setValue(zwData);
         }
         node.updatingColorHex = false;
-      }
+      };
     }
 
     if (coolCapability != 0) {
@@ -1085,10 +1086,10 @@ class ZWaveClassifier {
         this.value = newLevel;
         const zwData = `#00000000${hexStr}`;
         if (colorHexProperty.value != zwData) {
-          colorHexProperty.setValue(zwData)
+          colorHexProperty.setValue(zwData);
         }
         node.updatingColorHex = false;
-      }
+      };
     }
 
     colorHexProperty.updated = function() {
@@ -1110,7 +1111,7 @@ class ZWaveClassifier {
           coolColorProperty.setValue(newValue);
         }
       }
-    }
+    };
     // We should have a coleHexValue by the time the classifier is called.
     // Call update to cause the other controls to get updated.
     node.updatingColorHex = true;

@@ -64,10 +64,9 @@ function classify_json(pathname) {
 if (process.env.CLASSIFY_FILE) {
   const pathname = path.join(classifierFolder, process.env.CLASSIFY_FILE);
   classify_json(pathname);
-
 } else {
   const files = fs.readdirSync(classifierFolder);
-  files.forEach(filename => {
+  files.forEach((filename) => {
     const pathname = path.join(classifierFolder, filename);
     classify_json(pathname);
   });

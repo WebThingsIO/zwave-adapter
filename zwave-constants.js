@@ -53,7 +53,7 @@ const COLOR_INDEX = {
   COLOR: 0,
   INDEX: 1,
   CAPABILITIES: 2,
-  DURATION: 3
+  DURATION: 3,
 };
 
 const COLOR_CAPABILITY = {

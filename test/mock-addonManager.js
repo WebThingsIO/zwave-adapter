@@ -6,9 +6,9 @@
  * file, You can obtain one at http://mozilla.org/MPL/2.0/.*
  */
 
- 'use strict';
+'use strict';
 
- const EventEmitter = require('events').EventEmitter;
+const EventEmitter = require('events').EventEmitter;
 
 class MockAddonManager extends EventEmitter {
   constructor() {
