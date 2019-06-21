@@ -3,6 +3,12 @@ language: node_js
 node_js:
   - 8
 
+os:
+- linux
+
+before_install:
+  - ./before-install-linux.sh
+
 script:
   - yarn
   - npm run lint
