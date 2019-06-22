@@ -23,7 +23,7 @@ const classifierFolder = './test/classifier/';
 
 const manifest = JSON.parse(fs.readFileSync('./package.json'));
 
-function classify_json(pathname) {
+function classifyJson(pathname) {
   describe(path.basename(pathname), () => {
     it('properties', () => {
       console.log('test for', pathname);
@@ -63,11 +63,11 @@ function classify_json(pathname) {
 
 if (process.env.CLASSIFY_FILE) {
   const pathname = path.join(classifierFolder, process.env.CLASSIFY_FILE);
-  classify_json(pathname);
+  classifyJson(pathname);
 } else {
   const files = fs.readdirSync(classifierFolder);
   files.forEach((filename) => {
     const pathname = path.join(classifierFolder, filename);
-    classify_json(pathname);
+    classifyJson(pathname);
   });
 }
