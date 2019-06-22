@@ -32,7 +32,6 @@
   "devDependencies": {
     "babel-eslint": "^10.0.1",
     "eslint": "^5.16.0",
-    "eslint-plugin-html": "^5.0.5",
     "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
     "jest": "^24.6"
   },
