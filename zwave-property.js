@@ -162,6 +162,7 @@ class ZWaveProperty extends Property {
   }
 
   parseZwValueListMap(zwData) {
+    console.log('parseZwValueListMap: zwData =', zwData);
     let value = false;
     const zwValue = this.device.zwValues[this.valueId];
     if (zwValue && zwValue.hasOwnProperty('values')) {
@@ -172,7 +173,7 @@ class ZWaveProperty extends Property {
         value = this.valueListMap[valueIdx];
       }
     }
-    return [value, zwData.value];
+    return [value, `${value} zw:${zwData}`];
   }
 
   parseZwValueMap(zwData) {
@@ -183,7 +184,7 @@ class ZWaveProperty extends Property {
         value = true;
       }
     }
-    return [value, zwData];
+    return [value, `${value} zw:${zwData}`];
   }
 
   setRRGGBBWWCWColorValue(value) {
