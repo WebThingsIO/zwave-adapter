@@ -719,7 +719,7 @@
   "properties": {
     "open": {
       "name": "open",
-      "value": true,
+      "value": false,
       "visible": true,
       "title": "Open",
       "type": "boolean",
@@ -730,7 +730,7 @@
     },
     "tamper": {
       "name": "tamper",
-      "value": true,
+      "value": false,
       "visible": true,
       "title": "Tamper",
       "type": "boolean",
