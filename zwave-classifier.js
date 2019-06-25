@@ -1181,6 +1181,7 @@ class ZWaveClassifier {
   }
 
   addNotificationSensorProperty(node, valueId, sensor) {
+    let alarmProperty;
     if (!node.name) {
       node.name = `${node.id}-${sensor.name}`;
     }
@@ -1188,7 +1189,7 @@ class ZWaveClassifier {
       node['@type'] = [].concat(sensor['@type']);
     }
     if (sensor.hasOwnProperty('valueListMap')) {
-      const property = this.addProperty(
+      alarmProperty = this.addProperty(
         node,
         sensor.propertyName,
         sensor.propertyDescr,
@@ -1196,16 +1197,16 @@ class ZWaveClassifier {
         null,
         'parseZwValueListMap'
       );
-      property.valueListMap = sensor.valueListMap;
+      alarmProperty.valueListMap = sensor.valueListMap;
       if (sensor.addValueId2) {
         const zwValue = node.zwValues[valueId];
         const valueId2 = node.makeValueId(zwValue.class_id, 2, zwValue.index);
         if (node.zwValues.hasOwnProperty(valueId2)) {
-          property.valueId2 = valueId2;
+          alarmProperty.valueId2 = valueId2;
         }
       }
     } else if (sensor.hasOwnProperty('valueMap')) {
-      const property = this.addProperty(
+      alarmProperty = this.addProperty(
         node,
         sensor.propertyName,
         sensor.propertyDescr,
@@ -1213,7 +1214,40 @@ class ZWaveClassifier {
         null,
         'parseZwValueMap'
       );
-      property.valueMap = sensor.valueMap;
+      alarmProperty.valueMap = sensor.valueMap;
+    }
+
+    // Some sensors, have a binary sensor in addition to the alarm.
+    // In particular, the Heiman Smoke Sensor HS1SA-Z send both a notification
+    // and a binary sensor notification. However, the alarm notification
+    // doesn't seem to be recognized (this might be a bug in either the
+    // configuration or the openzwave library - I'm not sure). For now
+    // we'll add a hidden property which also triggers the Alarm Propery.
+
+    const zwValue = node.zwValues[valueId];
+    if (alarmProperty &&
+        zwValue &&
+        zwValue.class_id == COMMAND_CLASS.ALARM &&
+        zwValue.index == NOTIFICATION_SMOKE_DETECTOR) {
+      const binarySensorValueId =
+        node.findValueId(COMMAND_CLASS.SENSOR_BINARY,
+                         1,
+                         SENSOR_BINARY_INDEX_SENSOR);
+      if (binarySensorValueId) {
+        const binaryProperty = this.addProperty(
+          node,
+          '_on',
+          {
+            '@type': 'BooleanProperty',
+            readOnly: true,
+          },
+          binarySensorValueId
+        );
+        binaryProperty.updated = function() {
+          alarmProperty.setCachedValue(binaryProperty.value);
+          node.notifyPropertyChanged(alarmProperty);
+        };
+      }
     }
   }
 
