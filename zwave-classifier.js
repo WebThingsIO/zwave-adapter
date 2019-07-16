@@ -57,7 +57,7 @@ const NOTIFICATION_ACCESS_CONTROL = 6;
 const NOTIFICATION_HOME_SECURITY = 7;
 
 const NOTIFICATION_SENSOR = {
-  [NOTIFICATION_SMOKE_DETECTOR]: {  // 1
+  [NOTIFICATION_SMOKE_DETECTOR]: {// 1
     name: 'smoke',
     '@type': ['Alarm'],
     propertyName: 'on',
@@ -70,7 +70,7 @@ const NOTIFICATION_SENSOR = {
     },
     valueListMap: [false, true],
   },
-  [NOTIFICATION_WATER_LEAK]: {  // 5
+  [NOTIFICATION_WATER_LEAK]: {// 5
     name: 'water',
     '@type': ['LeakSensor'],
     propertyName: 'on',
@@ -84,7 +84,7 @@ const NOTIFICATION_SENSOR = {
     valueListMap: [false, true],
     addValueId2: true,
   },
-  [NOTIFICATION_ACCESS_CONTROL]: {  // 6
+  [NOTIFICATION_ACCESS_CONTROL]: {// 6
     name: 'switch',
     '@type': ['DoorSensor'],
     propertyName: 'open',
@@ -97,7 +97,7 @@ const NOTIFICATION_SENSOR = {
     },
     valueListMap: [false, true, false],
   },
-  [NOTIFICATION_HOME_SECURITY]: {  // 7
+  [NOTIFICATION_HOME_SECURITY]: {// 7
     name: 'motion',
     '@type': ['MotionSensor'],
     propertyName: 'motion',
@@ -114,7 +114,7 @@ const NOTIFICATION_SENSOR = {
 
 // These are additional sensors that aren't the main function of the sensor.
 const NOTIFICATION_SENSOR2 = {
-  [NOTIFICATION_HOME_SECURITY]: {  // 7
+  [NOTIFICATION_HOME_SECURITY]: {// 7
     name: 'tamper',
     propertyName: 'tamper',
     propertyDescr: {
@@ -813,7 +813,7 @@ class ZWaveClassifier {
       return this.addProperty(
         node,                     // node
         'on',                     // name
-        {                         // property decscription
+        {// property decscription
           '@type': 'OnOffProperty',
           label: 'On/Off',
           type: 'boolean',
@@ -825,7 +825,7 @@ class ZWaveClassifier {
     return this.addProperty(
       node,                     // node
       `on${buttonNum}`,         // name
-      {                         // property decscription
+      {// property decscription
         '@type': 'BooleanProperty',
         label: `On/Off ${buttonNum}`,
         type: 'boolean',
@@ -840,7 +840,7 @@ class ZWaveClassifier {
       return this.addProperty(
         node,                   // node
         `level`,                // name
-        {                       // property decscription
+        {// property decscription
           '@type': 'LevelProperty',
           label: 'Level',
           type: 'number',
@@ -855,7 +855,7 @@ class ZWaveClassifier {
     return this.addProperty(
       node,                   // node
       `level${buttonNum}`,    // name
-      {                       // property decscription
+      {// property decscription
         // '@type': 'LevelProperty',
         label: `Level ${buttonNum}`,
         type: 'number',
@@ -969,7 +969,7 @@ class ZWaveClassifier {
     this.addProperty(
       node,                     // node
       'on',            // name
-      {                         // property decscription
+      {// property decscription
         '@type': 'OnOffProperty',
         label: 'On/Off',
         type: 'boolean',
@@ -1265,7 +1265,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                     // node
         `on${suffix}`,            // name
-        {                         // property decscription
+        {// property decscription
           '@type': suffix ? 'BooleanProperty' : 'OnOffProperty',
           label: suffix ? `On/Off (${suffix})` : 'On/Off',
           type: 'boolean',
@@ -1280,7 +1280,7 @@ class ZWaveClassifier {
         this.addProperty(
           node,                   // node
           `level${suffix}`,       // name
-          {                       // property decscription
+          {// property decscription
             '@type': suffix ? '' : 'LevelProperty',
             label: suffix ? `Level (${suffix})` : 'Level',
             type: 'number',
@@ -1302,7 +1302,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                     // node
         `on${suffix}`,            // name
-        {                         // property decscription
+        {// property decscription
           '@type': suffix ? 'BooleanProperty' : 'OnOffProperty',
           label: suffix ? `On/Off (${suffix})` : 'On/Off',
           type: 'boolean',
@@ -1314,7 +1314,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                   // node
         `level${suffix}`,       // name
-        {                       // property decscription
+        {// property decscription
           '@type': suffix ? '' : 'LevelProperty',
           label: suffix ? `Level (${suffix})` : 'Level',
           type: 'number',
@@ -1340,7 +1340,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                   // node
         `instantaneousPower${suffix}`, // name
-        {                       // property decscription
+        {// property decscription
           '@type': suffix ? '' : 'InstantaneousPowerProperty',
           label: suffix ? `Power (${suffix})` : 'Power',
           type: 'number',
@@ -1361,7 +1361,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                   // node
         `voltage${suffix}`,     // name
-        {                       // property decscription
+        {// property decscription
           '@type': suffix ? '' : 'VoltageProperty',
           label: suffix ? `Voltage (${suffix})` : 'Voltage',
           type: 'number',
@@ -1382,7 +1382,7 @@ class ZWaveClassifier {
       this.addProperty(
         node,                   // node
         `current${suffix}`,     // name
-        {                       // property decscription
+        {// property decscription
           '@type': suffix ? '' : 'CurrentProperty',
           label: suffix ? `Current (${suffix})` : 'Current',
           type: 'number',
@@ -1425,7 +1425,7 @@ class ZWaveClassifier {
     this.addProperty(
       node,                     // node
       'on',                     // name
-      {                         // property decscription
+      {// property decscription
         '@type': 'BooleanProperty',
         readOnly: true,
       },
