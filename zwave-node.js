@@ -314,22 +314,6 @@ class ZWaveNode extends Device {
         property.updating = false;
       }
     }
-
-    if (this.canSleep) {
-      // For battery powered devices, we want to write out the
-      // configuration whenever a property change occurs. This
-      // ensures that when we start up we'll have the best idea
-      // of the last state. For mains powered devices, we'll get
-      // the information during the scan, so we don't need to
-      // save it here.
-      const valueId = property.valueId;
-      if (valueId) {
-        const zwValue = this.zwValues[valueId];
-        if (zwValue) {
-          this.adapter.writeConfigDeferred();
-        }
-      }
-    }
   }
 
   static oneLineHeader(line) {

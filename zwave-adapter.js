@@ -157,7 +157,6 @@ class ZWaveAdapter extends Adapter {
     if (node.nodeId > 1) {
       zwaveClassifier.classify(node);
       super.handleDeviceAdded(node);
-      this.writeConfigDeferred();
     }
   }
 
@@ -182,7 +181,6 @@ class ZWaveAdapter extends Adapter {
     console.log('Scan complete');
     this.ready = true;
     this.dump();
-    this.writeConfigDeferred();
   }
 
   nodeAdded(nodeId) {
@@ -267,7 +265,6 @@ class ZWaveAdapter extends Adapter {
     if (node) {
       node.lastStatus = 'removed';
       this.handleDeviceRemoved(node);
-      this.writeConfigDeferred();
     }
   }
 
@@ -378,31 +375,6 @@ class ZWaveAdapter extends Adapter {
     const node = this.nodes[nodeId];
     if (node) {
       node.zwValueRemoved(comClass, valueInstance, valueIndex);
-    }
-  }
-
-  writeConfig() {
-    console.log('Writing ZWave configuration');
-    this.zwave.writeConfig();
-  }
-
-  writeConfigDeferred() {
-    // In order to reduce the number of times we rewrite the device info
-    // we defer writes for a time.
-
-    if (DEBUG_flow || process.env.NODE_ENV === 'test') {
-      this.writeConfig();
-    } else {
-      const timeoutSeconds = 120;
-
-      if (this.writeConfigTimeout) {
-        // already a timeout setup.
-        return;
-      }
-      this.writeConfigTimeout = setTimeout(() => {
-        this.writeConfigTimeout = null;
-        this.writeConfig();
-      }, timeoutSeconds * 1000);
     }
   }
 
