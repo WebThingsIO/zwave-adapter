@@ -694,6 +694,17 @@
       "readOnly": true,
       "valueId": "7-113-1-7"
     },
+    "wakeUpInterval": {
+      "name": "wakeUpInterval",
+      "value": 3600,
+      "visible": true,
+      "title": "WakeUp Interval",
+      "@type": "LevelProperty",
+      "unit": "seconds",
+      "minimum": 600,
+      "maximum": 604800,
+      "valueId": "7-132-1-0"
+    },
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 80,

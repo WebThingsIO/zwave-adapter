@@ -161,6 +161,11 @@ const SWITCH_BINARY_INDEX_SWITCH = 0;
 //       part of the ZWave specification.
 const SWITCH_MULTILEVEL_INDEX_LEVEL = 0;
 
+// From ValueIDIndexesDefines.def
+const WAKEUP_INTERVAL_VALUE = 0;
+const WAKEUP_INTERVAL_MIN = 1;
+const WAKEUP_INTERVAL_MAX = 2;
+
 const QUIRKS = [
   {
     // The Aeotec devices don't seem to notify on current changes, only on
@@ -219,6 +224,10 @@ const QUIRKS = [
       // Configure motion sensor to send 'Basic Set', rather than
       // 'Binary Sensor report'.
       {paramId: 5, value: 1, size: 1},
+      // Enable threshold reporting
+      {paramId: 40, value: 1, size: 1},
+      // Report 0.5C temperature changes
+      {paramId: 41, value: 0x00050100, size: 4},
     ],
   },
   {
@@ -416,6 +425,18 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET);
+    const wakeUpIntervalValueId =
+      node.findValueId(COMMAND_CLASS.WAKE_UP,
+                       1,
+                       WAKEUP_INTERVAL_VALUE);
+    const minWakeUpIntervalValueId =
+      node.findValueId(COMMAND_CLASS.WAKE_UP,
+                       1,
+                       WAKEUP_INTERVAL_MIN);
+    const maxWakeUpIntervalValueId =
+      node.findValueId(COMMAND_CLASS.WAKE_UP,
+                       1,
+                       WAKEUP_INTERVAL_MAX);
 
     if (DEBUG) {
       const genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
@@ -432,6 +453,13 @@ class ZWaveClassifier {
       console.log('classify:   temperatureValueId  =', temperatureValueId);
       console.log('classify:   luminanceValueId    =', luminanceValueId);
       console.log('classify:   humidityValueId     =', humidityValueId);
+      console.log('classify:   wakeUpIntervalValueId    =',
+                  wakeUpIntervalValueId);
+      console.log('classify:   minWakeUpIntervalValueId =',
+                  minWakeUpIntervalValueId);
+      console.log('classify:   maxWakeUpIntervalValueId =',
+                  maxWakeUpIntervalValueId);
+
       console.log('classify:   quirk.isLight       =', node.isLight);
     }
 
@@ -488,6 +516,7 @@ class ZWaveClassifier {
         this.initBinarySensor(node, binarySensorValueId);
         break;
 
+      case GENERIC_TYPE.SENSOR_MULTILEVEL:
       case GENERIC_TYPE.SENSOR_NOTIFICATION:
         this.initSensorNotification(node);
         break;
@@ -523,6 +552,12 @@ class ZWaveClassifier {
 
     if (uvValueId) {
       this.addUltravioletProperty(node, uvValueId);
+    }
+
+    if (wakeUpIntervalValueId) {
+      this.addWakeUpProperty(node, wakeUpIntervalValueId,
+                             minWakeUpIntervalValueId,
+                             maxWakeUpIntervalValueId);
     }
   }
 
@@ -613,6 +648,7 @@ class ZWaveClassifier {
         minimum: 0,
         maximum: 100,
         unit: 'percent',
+        readOnly: true,
       },
       humidityValueId
     );
@@ -627,28 +663,27 @@ class ZWaveClassifier {
         label: 'Luminance',
         type: 'number',
         unit: 'lux',
+        readOnly: true,
       },
       luminanceValueId
     );
   }
 
   addTemperatureProperty(node, temperatureValueId) {
-    const descr = {
-      '@type': 'TemperatureProperty',
-      label: 'Temperature',
-      type: 'number',
-    };
-    const zwValue = node.zwValues[temperatureValueId];
-    if (zwValue.units === 'F') {
-      descr.unit = 'degree fahrenheit';
-    } else if (zwValue.units === 'C') {
-      descr.unit = 'degree celsius';
-    }
     this.addProperty(
       node,
       'temperature',
-      descr,
-      temperatureValueId
+      {
+        '@type': 'TemperatureProperty',
+        label: 'Temperature',
+        type: 'number',
+        unit: 'degree celsius',
+        multipleOf: 0.1,
+        readOnly: true,
+      },
+      temperatureValueId,
+      null,
+      'parseTemperatureZwValue'
     );
 
     if (!node['@type'].includes('TemperatureSensor')) {
@@ -664,6 +699,7 @@ class ZWaveClassifier {
         // TODO: add proper @type
         label: 'UV Index',
         type: 'number',
+        readOnly: true,
       },
       uvValueId
     );
@@ -890,6 +926,31 @@ class ZWaveClassifier {
     property.fireAndForget = true;
     return property;
   }
+
+  addConfigLevel(node, paramId, label, min, max, unit) {
+    const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, paramId);
+    if (!valueId) {
+      console.error('addConfigNumber:', node.id,
+                    'no config parameter with id:', paramId);
+      return;
+    }
+    const property = this.addProperty(
+      node,                 // node
+      `config-${paramId}`,  // name
+      {
+        label: label,
+        '@type': 'LevelProperty',
+        type: 'number',
+        minimum: min,
+        maximum: max,
+        unit: unit,
+      },
+      valueId
+    );
+    property.fireAndForget = true;
+    return property;
+  }
+
 
   addConfigList(node, paramId, label) {
     const valueId = node.findValueId(COMMAND_CLASS.CONFIGURATION, 1, paramId);
@@ -1137,6 +1198,7 @@ class ZWaveClassifier {
       if (!valueId) {
         continue;
       }
+
       if (sensor.hasOwnProperty('valueMap')) {
         // Some valueIds map to multiple properties. For example tamper and
         // motion both get encoded into the X-113-1-7 valueId, like:
@@ -1188,6 +1250,30 @@ class ZWaveClassifier {
     if (sensor.hasOwnProperty('@type')) {
       node['@type'] = [].concat(sensor['@type']);
     }
+
+    if (node.zwInfo.manufacturerId == AEOTEC_MANUFACTURER_ID &&
+        node.zwInfo.productId == AEOTEC_ZW100_PRODUCT_ID &&
+        sensor.name == 'motion') {
+      // On the Aeotec Multisensor 6, we use BASIC_SET to indicate
+      // motion rather than the alarm notification
+
+      const binarySensorValueId =
+        node.findValueId(COMMAND_CLASS.SENSOR_BINARY,
+                         1,
+                         SENSOR_BINARY_INDEX_SENSOR);
+      if (binarySensorValueId) {
+        this.addProperty(
+          node,
+          sensor.propertyName,
+          sensor.propertyDescr,
+          binarySensorValueId
+        );
+        this.addConfigLevel(node, 3, 'Motion Timeout', 10, 3600, 'seconds');
+        this.addConfigList(node, 4, 'Motion Sensitivity');
+        return;
+      }
+    }
+
     if (sensor.hasOwnProperty('valueListMap')) {
       alarmProperty = this.addProperty(
         node,
@@ -1248,6 +1334,42 @@ class ZWaveClassifier {
           node.notifyPropertyChanged(alarmProperty);
         };
       }
+    }
+  }
+
+  addWakeUpProperty(node, wakeUpIntervalValueId,
+                    minWakeUpIntervalValueId, maxWakeUpIntervalValueId) {
+    if (minWakeUpIntervalValueId && maxWakeUpIntervalValueId) {
+      const minWakeUpInterval = node.zwValues[minWakeUpIntervalValueId].value;
+      const maxWakeUpInterval = node.zwValues[maxWakeUpIntervalValueId].value;
+      if (minWakeUpInterval == 0 && maxWakeUpInterval == 0) {
+        // This means that the sensor doesn't use the wake-up interval and
+        // only wakes up due to events (like a door-open switch)
+        return;
+      }
+      this.addProperty(
+        node,
+        'wakeUpInterval',
+        {
+          '@type': 'LevelProperty',
+          label: 'WakeUp Interval',
+          minimum: minWakeUpInterval,
+          maximum: maxWakeUpInterval,
+          unit: 'seconds',
+        },
+        wakeUpIntervalValueId
+      );
+    } else {
+      this.addProperty(
+        node,
+        'wakeUpInterval',
+        {
+          label: 'WakeUp Interval',
+          type: 'number',
+          unit: 'seconds',
+        },
+        wakeUpIntervalValueId
+      );
     }
   }
 

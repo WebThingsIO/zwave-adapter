@@ -157,6 +157,14 @@ class ZWaveProperty extends Property {
     ];
   }
 
+  parseTemperatureZwValue(zwData) {
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue.units === 'F') {
+      return [(zwData - 32) / 1.8, `zw: ${zwData} F`];
+    }
+    return [zwData, `zw: ${zwData} C`];
+  }
+
   parseZwValue(zwData) {
     return this.parseValueFromZwValue(zwData);
   }
