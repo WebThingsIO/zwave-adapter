@@ -1219,13 +1219,26 @@
     },
     "temperature": {
       "name": "temperature",
-      "value": "70.3",
+      "value": 21.277777777777775,
+      "multipleOf": 0.1,
       "visible": true,
+      "readOnly": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",
-      "unit": "degree fahrenheit",
+      "unit": "degree celsius",
       "valueId": "12-49-1-1"
+    },
+    "wakeUpInterval": {
+      "name": "wakeUpInterval",
+      "value": 3600,
+      "visible": true,
+      "title": "WakeUp Interval",
+      "@type": "LevelProperty",
+      "unit": "seconds",
+      "minimum": 240,
+      "maximum": 16777200,
+      "valueId": "12-132-1-0"
     },
     "batteryLevel": {
       "name": "batteryLevel",

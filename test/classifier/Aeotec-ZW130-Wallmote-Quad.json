@@ -2453,6 +2453,17 @@
       "@type": "ColorProperty",
       "valueId": "10-112-1-5"
     },
+    "wakeUpInterval": {
+      "name": "wakeUpInterval",
+      "value": 0,
+      "visible": true,
+      "title": "WakeUp Interval",
+      "@type": "LevelProperty",
+      "unit": "seconds",
+      "minimum": 0,
+      "maximum": 864000,
+      "valueId": "10-132-1-0"
+    },
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 58,

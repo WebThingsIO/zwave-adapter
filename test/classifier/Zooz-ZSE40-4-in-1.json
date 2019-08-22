@@ -894,16 +894,19 @@
     },
     "temperature": {
       "name": "temperature",
-      "value": "70.87",
+      "value": 21.594444444444445,
+      "multipleOf": 0.1,
       "visible": true,
+      "readOnly": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",
-      "unit": "degree fahrenheit",
+      "unit": "degree celsius",
       "valueId": "9-49-1-1"
     },
     "luminance": {
       "name": "luminance",
+      "readOnly": true,
       "value": "1.56",
       "visible": true,
       "title": "Luminance",
@@ -921,7 +924,19 @@
       "unit": "percent",
       "minimum": 0,
       "maximum": 100,
+      "readOnly": true,
       "valueId": "9-49-1-5"
+    },
+    "wakeUpInterval": {
+      "name": "wakeUpInterval",
+      "value": 43200,
+      "visible": true,
+      "title": "WakeUp Interval",
+      "@type": "LevelProperty",
+      "unit": "seconds",
+      "minimum": 600,
+      "maximum": 604800,
+      "valueId": "9-132-1-0"
     },
     "batteryLevel": {
       "name": "batteryLevel",
