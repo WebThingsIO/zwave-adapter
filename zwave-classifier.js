@@ -35,7 +35,27 @@ const AEOTEC_MANUFACTURER_ID = '0x0086';
 const AEOTEC_ZW096_PRODUCT_ID = '0x0060'; // SmartPlug (Switch)
 const AEOTEC_ZW099_PRODUCT_ID = '0x0063'; // SmartPlug (Dimmer)
 const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
+const AEOTEC_ZW111_PRODUCT_ID = '0x006f'; // Nano Dimmer with metering
+const AEOTEC_ZW116_PRODUCT_ID = '0x0074'; // Nano Switch
 const AEOTEC_ZW130_PRODUCT_ID = '0x0082'; // WallMote Quad
+const AEOTEC_ZW132_PRODUCT_ID = '0x0064'; // Dual Nano Switch with metering
+const AEOTEC_ZW139_PRODUCT_ID = '0x008b'; // Nano Switch (End of Life)
+const AEOTEC_ZW140_PRODUCT_ID = '0x008c'; // Dual Nano Switch
+const AEOTEC_ZW141_PRODUCT_ID = '0x008d'; // Nano Shutter
+
+function nodeHasAeotecS1S2Mode(node) {
+  // These devices have an S1 and S2 input which can control the output(s).
+  // They also have config options which determine which type of external
+  // switch is connected to S1 and S2, and we expose these config options
+  // as properties.
+  return node.zwInfo.manufacturerId == AEOTEC_MANUFACTURER_ID &&
+         (node.zwInfo.productId == AEOTEC_ZW111_PRODUCT_ID ||
+          node.zwInfo.productId == AEOTEC_ZW116_PRODUCT_ID ||
+          node.zwInfo.productId == AEOTEC_ZW132_PRODUCT_ID ||
+          node.zwInfo.productId == AEOTEC_ZW139_PRODUCT_ID ||
+          node.zwInfo.productId == AEOTEC_ZW140_PRODUCT_ID ||
+          node.zwInfo.productId == AEOTEC_ZW141_PRODUCT_ID);
+}
 
 // From cpp/src/command_classes/SwitchMultilevel.cpp
 // The code uses "_data[5]+3" for the index.
@@ -481,32 +501,53 @@ class ZWaveClassifier {
             return;
           }
         }
-        // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
-        // 1 and 2, and don't seem to work on instance 2. So we always
-        // use instance 1 for the first outlet, and then 3 and beyond for the
-        // second and beyond outlets.
-        this.initSwitch(node, binarySwitchValueId, levelValueId, '');
 
-        // Check to see if this is a switch with multiple outlets.
-        let inst = 3;
-        let switchCount = 1;
-        // eslint-disable-next-line no-constant-condition
-        while (true) {
-          const bsValueId =
+        const bsValueId = [null, binarySwitchValueId];
+        const lvlValueId = [null, levelValueId];
+        let instance = 1;
+        do {
+          instance += 1;
+          bsValueId[instance] =
             node.findValueId(COMMAND_CLASS.SWITCH_BINARY,
-                             inst,
+                             instance,
                              SWITCH_BINARY_INDEX_SWITCH);
-          const lvlValueId =
+          lvlValueId[instance] =
             node.findValueId(COMMAND_CLASS.SWITCH_MULTILEVEL,
-                             inst,
+                             instance,
                              SWITCH_MULTILEVEL_INDEX_LEVEL);
-          if (bsValueId || lvlValueId) {
-            switchCount += 1;
-            this.initSwitch(node, bsValueId, lvlValueId,
-                            switchCount.toString());
-            inst += 1;
+        } while (bsValueId[instance] || lvlValueId[instance]);
+
+        // Instances are numbered starting at 1 (not zero), and instance
+        // will also be 1 higher since the last time through the do/while
+        // loop will have stored undefined in both bsValueId and lvlValueId
+        const instanceCount = instance - 1;
+
+        if (instanceCount < 3) {
+          // Some devices (like the ZW099 Smart Dimmer 6) advertise instance
+          // 1 and 2, and don't seem to work on instance 2. So we always
+          // use instance 1 for the first outlet, and then 3 and beyond for the
+          // second and beyond outlets.
+          this.initSwitch(node, bsValueId[1], lvlValueId[1], '');
+        } else {
+          // 2 or more switches
+          if (node.zwInfo.manufacturerId == AEOTEC_MANUFACTURER_ID) {
+            // With Aeotec, when there are multiple switches, then
+            // instances 2 - N are used. Instance 1 seems to control
+            // all of the switches.
+            // At least this is true for the Dual Nano Switch
+            this.initSwitch(node, bsValueId[2], lvlValueId[2], '');
           } else {
-            break;
+            // The only other dual switch tested needed to use instance
+            // 1 and 3. It was an inovelli 2 channel Dual Smart Plug (ZW37)
+            // and I can't find it for sale anyplace. The one I tested with
+            // was loaned from Lars.
+            this.initSwitch(node, bsValueId[1], lvlValueId[1], '');
+          }
+          let switchNum = 2;
+          for (instance = 3; instance <= instanceCount; instance++) {
+            this.initSwitch(node, bsValueId[instance], lvlValueId[instance],
+                            switchNum.toString());
+            switchNum += 1;
           }
         }
         break;
@@ -1376,6 +1417,9 @@ class ZWaveClassifier {
   initSwitch(node, binarySwitchValueId, levelValueId, suffix) {
     node['@type'] = ['OnOffSwitch'];
 
+    console.log('binarySwitchValueId =', binarySwitchValueId,
+                'levelValueId =', levelValueId,
+                'suffix =', suffix);
     if (binarySwitchValueId) {
       if (suffix) {
         // Until we have the capabilities system, in order for the UI
@@ -1414,6 +1458,10 @@ class ZWaveClassifier {
           'setLevelValue',        // setZwValueFromValue
           'parseLevelZwValue'     // parseValueFromZwValue
         );
+      }
+      if (suffix === '' && nodeHasAeotecS1S2Mode(node)) {
+        this.addConfigList(node, 120, 'S1 Mode');
+        this.addConfigList(node, 121, 'S2 Mode');
       }
     } else {
       // For switches which don't support the on/off we fake it using level
