@@ -30,10 +30,10 @@
     "serialport": "^7.1.5"
   },
   "devDependencies": {
-    "babel-eslint": "^10.0.2",
-    "eslint": "^6.1.0",
+    "babel-eslint": "^10.0.3",
+    "eslint": "^6.2.2",
     "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
-    "jest": "^24.8.0"
+    "jest": "^24.9.0"
   },
   "files": [
     "LICENSE",
