@@ -49,9 +49,12 @@ function classifyJson(pathname) {
       expect(node['@type']).toStrictEqual(json['@type']);
       node.properties.forEach((property, propertyName) => {
         console.log('Testing property', propertyName);
-        expect(json.properties.hasOwnProperty(propertyName)).toBeTruthy();
-        const jsonProperty = json.properties[propertyName];
-        expect(property.asDict()).toEqual(jsonProperty);
+        if (json.properties.hasOwnProperty(propertyName)) {
+          const jsonProperty = json.properties[propertyName];
+          expect(property.asDict()).toEqual(jsonProperty);
+        } else {
+          fail(`Missing property ${propertyName}`);
+        }
       });
 
       for (const jsonPropertyName in json.properties) {
