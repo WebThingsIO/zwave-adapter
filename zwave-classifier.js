@@ -66,6 +66,7 @@ function nodeHasAeotecS1S2Mode(node) {
 // which means it will be reported as an index of 10 (due to the +3
 // mentioned above).
 const ALARM_INDEX_HOME_SECURITY = 10;
+const ALARM_INDEX_TYPE_V1 = 512;
 
 // The following come from:
 // SDS13713 Notification Command Class, list of assigned Notifications.xlsx
@@ -150,6 +151,8 @@ const NOTIFICATION_SENSOR2 = {
 
 // This would be from Battery.cpp, but it only has a single index.
 const BATTERY_INDEX_LEVEL = 0;
+
+const DOOR_LOCK_LOCKED = 0;
 
 // Refer to ZWave document SDS13781 "Z-Wave Application Command Class
 // Specification", Table 67 - Meter Table Capability Report.
@@ -413,6 +416,10 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS.SWITCH_BINARY,
                        1,
                        SWITCH_BINARY_INDEX_SWITCH);
+    const doorLockValueId =
+      node.findValueId(COMMAND_CLASS.DOOR_LOCK,
+                       1,
+                       DOOR_LOCK_LOCKED);
     const levelValueId =
       node.findValueId(COMMAND_CLASS.SWITCH_MULTILEVEL,
                        1,
@@ -466,6 +473,7 @@ class ZWaveClassifier {
       console.log('classify:   colorCapabilitiesValueId =',
                   colorCapabilitiesValueId);
       console.log('classify:   binarySwitchValueId =', binarySwitchValueId);
+      console.log('classify:   doorLockValueId     =', doorLockValueId);
       console.log('classify:   levelValueId        =', levelValueId);
       console.log('classify:   binarySensorValueId =', binarySensorValueId);
       console.log('classify:   centralSceneValueId =', centralSceneValueId);
@@ -564,6 +572,10 @@ class ZWaveClassifier {
 
       case GENERIC_TYPE.WALL_CONTROLLER:
         this.initCentralScene(node);
+        break;
+
+      case GENERIC_TYPE.ENTRY_CONTROL:
+        this.initEntryControl(node, doorLockValueId);
         break;
 
       default: {
@@ -1615,6 +1627,64 @@ class ZWaveClassifier {
 
     if (node.type === 'thing' && node.name == node.defaultName) {
       node.name = `${node.id}-thing`;
+    }
+  }
+
+  initEntryControl(node, doorLockValueId) {
+    node.name = `${node.id}-DoorLock`;
+
+    if (doorLockValueId) {
+      node.doorLockProperty = this.addProperty(
+        node,
+        'locked',
+        {
+          type: 'boolean',
+          label: 'Locked',
+        },
+        doorLockValueId
+      );
+    }
+
+    const alarmValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_TYPE_V1);
+    if (alarmValueId) {
+      node.alarmTypeProperty = this.addProperty(
+        node,
+        '_alarmType',
+        {
+          type: 'number',
+          readonly: true,
+        },
+        alarmValueId
+      );
+      if (node.doorLockProperty) {
+        // The Yale YRD110 only updates the doorLockProperty when its changed
+        // from the gateway. If the user manually locks or unlocks the door
+        // then it only generates alarms. We use those alarm notifications
+        // to update the value of the doorLockProperty.
+
+        node.alarmTypeProperty.updated = function() {
+          // I haven't yet been able to determine a source for the following
+          // numbers. This is what I observed imperically from the Yale YRD110
+          // lock.
+
+          switch (node.alarmTypeProperty.value) {
+            case 21:    // Lock from touchpad or inside knob
+            case 24: {  // Lock from gateway
+              node.setPropertyValue(node.doorLockProperty, true);
+              break;
+            }
+            case 19:    // Unlock from touchpad
+            case 22:    // Unlock from inside knob
+            case 25: {  // Unlock from gateway
+              node.setPropertyValue(node.doorLockProperty, false);
+              break;
+            }
+          }
+        };
+      }
     }
   }
 }
