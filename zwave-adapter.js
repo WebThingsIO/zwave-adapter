@@ -388,7 +388,8 @@ class ZWaveAdapter extends Adapter {
       console.log('Sending pairing prompt');
       this.sendPairingPrompt(msg);
     }
-    this.zwave.addNode();
+    const doSecurity = true;  // Will do secure inclusion, if available
+    this.zwave.addNode(doSecurity);
   }
 
   cancelPairing() {

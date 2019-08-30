@@ -27,16 +27,22 @@ const COMMAND_CLASS = {
   SENSOR_MULTILEVEL: 49,      // 0x31
   COLOR: 51,                  // 0x33
   METER: 50,                  // 0x32
+  DOOR_LOCK_LOGGING: 76,      // 0x4c
   CENTRAL_SCENE: 91,          // 0x5b
   ZWAVE_PLUS_INFO: 94,        // 0x5e
+  DOOR_LOCK: 98,              // 0x62
+  USER_CODE: 99,              // 0x63
   CONFIGURATION: 112,         // 0x70
   ALARM: 113,                 // 0x71
   MANUFACTURER_SPECIFIC: 114, // 0x72
   POWER_LEVEL: 115,           // 0x73
+  PROTECTION: 117,            // 0x75
   BATTERY: 128,               // 0x80
   CLOCK: 129,                 // 0x81
   WAKE_UP: 132,               // 0x84
   VERSION: 134,               // 0x86
+  TIME_PARAMETERS: 139,       // 0x8b
+  SECURITY: 152,              // 0x98
 };
 addInverseMap(COMMAND_CLASS);
 
