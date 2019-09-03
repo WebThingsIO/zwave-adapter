@@ -154,12 +154,11 @@ const BATTERY_INDEX_LEVEL = 0;
 
 const DOOR_LOCK_LOCKED = 0;
 
-// Refer to ZWave document SDS13781 "Z-Wave Application Command Class
-// Specification", Table 67 - Meter Table Capability Report.
-// These constants are the bit number times 4.
-const METER_INDEX_ELECTRIC_INSTANT_POWER = 8;    // Bit 2
-const METER_INDEX_ELECTRIC_INSTANT_VOLTAGE = 16; // Bit 3
-const METER_INDEX_ELECTRIC_INSTANT_CURRENT = 20; // Bit 5
+// These constants come from the OpenZWave ValueIDIndexesDefines.def
+// Search for ValueID_Index_Meter
+const METER_INDEX_ELECTRIC_INSTANT_POWER = 2;
+const METER_INDEX_ELECTRIC_INSTANT_VOLTAGE = 4;
+const METER_INDEX_ELECTRIC_INSTANT_CURRENT = 5;
 
 // This would be from SensorBinary.cpp, but it only has a single index.
 const SENSOR_BINARY_INDEX_SENSOR = 0;
