@@ -43,18 +43,21 @@ const AEOTEC_ZW139_PRODUCT_ID = '0x008b'; // Nano Switch (End of Life)
 const AEOTEC_ZW140_PRODUCT_ID = '0x008c'; // Dual Nano Switch
 const AEOTEC_ZW141_PRODUCT_ID = '0x008d'; // Nano Shutter
 
+const ECOLINK_MANUFACTURER_ID = '0x014a';
+const ECOLINK_FLOOD_FREEZE_PRODUCT_ID = '0x0010';
+
 function nodeHasAeotecS1S2Mode(node) {
   // These devices have an S1 and S2 input which can control the output(s).
   // They also have config options which determine which type of external
   // switch is connected to S1 and S2, and we expose these config options
   // as properties.
-  return node.zwInfo.manufacturerId == AEOTEC_MANUFACTURER_ID &&
-         (node.zwInfo.productId == AEOTEC_ZW111_PRODUCT_ID ||
-          node.zwInfo.productId == AEOTEC_ZW116_PRODUCT_ID ||
-          node.zwInfo.productId == AEOTEC_ZW132_PRODUCT_ID ||
-          node.zwInfo.productId == AEOTEC_ZW139_PRODUCT_ID ||
-          node.zwInfo.productId == AEOTEC_ZW140_PRODUCT_ID ||
-          node.zwInfo.productId == AEOTEC_ZW141_PRODUCT_ID);
+  return node.zwInfo.manufacturerId === AEOTEC_MANUFACTURER_ID &&
+         (node.zwInfo.productId === AEOTEC_ZW111_PRODUCT_ID ||
+          node.zwInfo.productId === AEOTEC_ZW116_PRODUCT_ID ||
+          node.zwInfo.productId === AEOTEC_ZW132_PRODUCT_ID ||
+          node.zwInfo.productId === AEOTEC_ZW139_PRODUCT_ID ||
+          node.zwInfo.productId === AEOTEC_ZW140_PRODUCT_ID ||
+          node.zwInfo.productId === AEOTEC_ZW141_PRODUCT_ID);
 }
 
 // From cpp/src/command_classes/SwitchMultilevel.cpp
@@ -1237,6 +1240,28 @@ class ZWaveClassifier {
     node.name = '';
     this.addNotificationSensorProperties(node, NOTIFICATION_SENSOR);
     this.addNotificationSensorProperties(node, NOTIFICATION_SENSOR2);
+
+    // The Ecolink Flood/Freeze sensor uses the notification CC for the
+    // flood portion, but uses index 1 of the binary sensor CC for the
+    // freeze portion.
+
+    if (node.zwInfo.manufacturerId === ECOLINK_MANUFACTURER_ID &&
+        node.zwInfo.productId === ECOLINK_FLOOD_FREEZE_PRODUCT_ID) {
+      const freezeValueId = node.findValueId(COMMAND_CLASS.SENSOR_BINARY, 1, 1);
+      if (freezeValueId) {
+        this.addProperty(
+          node,
+          'freeze',
+          {
+            '@type': 'BooleanProperty',
+            label: 'Freeze',
+            readOnly: true,
+          },
+          freezeValueId
+        );
+      }
+    }
+
     if (!node.name) {
       node.name = svName;
     }
@@ -1637,7 +1662,7 @@ class ZWaveClassifier {
         node,
         'locked',
         {
-          type: 'boolean',
+          '@type': 'BooleanProperty',
           label: 'Locked',
         },
         doorLockValueId
