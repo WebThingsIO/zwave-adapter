@@ -73,6 +73,7 @@ const ALARM_INDEX_TYPE_V1 = 512;
 // and also from
 
 const NOTIFICATION_SMOKE_DETECTOR = 1;
+const NOTIFICATION_CO_DETECTOR = 2;
 const NOTIFICATION_WATER_LEAK = 5;
 const NOTIFICATION_ACCESS_CONTROL = 6;
 const NOTIFICATION_HOME_SECURITY = 7;
@@ -87,6 +88,19 @@ const NOTIFICATION_SENSOR = {
       type: 'boolean',
       label: 'Smoke',
       description: 'Smoke Detector',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
+  },
+  [NOTIFICATION_CO_DETECTOR]: {// 2
+    name: 'co',
+    '@type': ['Alarm'],
+    propertyName: 'co',
+    propertyDescr: {
+      '@type': 'AlarmProperty',
+      type: 'boolean',
+      label: 'CO',
+      description: 'Carbon Monoxide Detector',
       readOnly: true,
     },
     valueListMap: [false, true],

@@ -112,7 +112,6 @@ class ZWaveProperty extends Property {
       // The Aeotec LED Strip never returns the value that was set
       // so we set fireAndForget to true (in the classifier) and ignore
       // updates.
-      console.log('parseRRGGBBWWCWColorValue: zwData =', zwData, '(ignoring)');
       zwData = this.value;
     }
     return [zwData, zwData];
@@ -170,7 +169,6 @@ class ZWaveProperty extends Property {
   }
 
   parseZwValueListMap(zwData) {
-    console.log('parseZwValueListMap: zwData =', zwData);
     let value = false;
     const zwValue = this.device.zwValues[this.valueId];
     if (zwValue && zwValue.hasOwnProperty('values')) {
