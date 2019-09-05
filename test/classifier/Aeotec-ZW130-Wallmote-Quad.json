@@ -2459,6 +2459,7 @@
       "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
+      "type": "number",
       "unit": "seconds",
       "minimum": 0,
       "maximum": 864000,
