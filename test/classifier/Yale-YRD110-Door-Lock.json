@@ -2647,6 +2647,7 @@
       "visible": true,
       "title": "Locked",
       "@type": "BooleanProperty",
+      "type": "boolean",
       "valueId": "11-98-1-0"
     },
     "_alarmType": {

@@ -700,6 +700,7 @@
       "visible": true,
       "title": "Freeze",
       "@type": "BooleanProperty",
+      "type": "boolean",
       "readOnly": true,
       "valueId": "14-48-1-1"
     },
@@ -709,6 +710,7 @@
       "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
+      "type": "number",
       "unit": "seconds",
       "minimum": 60,
       "maximum": 86400,

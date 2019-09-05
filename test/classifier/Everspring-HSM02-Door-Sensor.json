@@ -370,6 +370,7 @@
       "value": true,
       "visible": true,
       "@type": "BooleanProperty",
+      "type": "boolean",
       "readOnly": true,
       "valueId": "8-48-1-0"
     },
@@ -379,6 +380,7 @@
       "visible": true,
       "title": "Open",
       "@type": "OpenProperty",
+      "type": "boolean",
       "description": "Contact Switch",
       "readOnly": true,
       "valueId": "8-48-1-0"
@@ -389,6 +391,7 @@
       "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
+      "type": "number",
       "unit": "seconds",
       "minimum": 60,
       "maximum": 16777215,
