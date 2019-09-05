@@ -1254,6 +1254,7 @@ class ZWaveClassifier {
           'freeze',
           {
             '@type': 'BooleanProperty',
+            type: 'boolean',
             label: 'Freeze',
             readOnly: true,
           },
@@ -1429,6 +1430,7 @@ class ZWaveClassifier {
         'wakeUpInterval',
         {
           '@type': 'LevelProperty',
+          type: 'number',
           label: 'WakeUp Interval',
           minimum: minWakeUpInterval,
           maximum: maxWakeUpInterval,
@@ -1633,6 +1635,7 @@ class ZWaveClassifier {
       'on',                     // name
       {// property decscription
         '@type': 'BooleanProperty',
+        type: 'boolean',
         readOnly: true,
       },
       binarySensorValueId       // valueId
@@ -1642,6 +1645,7 @@ class ZWaveClassifier {
       'open',
       {
         '@type': 'OpenProperty',
+        type: 'boolean',
         label: 'Open',
         description: 'Contact Switch',
         readOnly: true,
@@ -1663,6 +1667,7 @@ class ZWaveClassifier {
         'locked',
         {
           '@type': 'BooleanProperty',
+          type: 'boolean',
           label: 'Locked',
         },
         doorLockValueId
