@@ -332,6 +332,7 @@ function quirkMatches(quirk, node) {
     if (id === 'productIds') {
       if (!quirk.zwInfo.productIds.includes(node.zwInfo.productId)) {
         match = false;
+        break;
       }
     } else if (node.zwInfo[id] !== quirk.zwInfo[id]) {
       match = false;
