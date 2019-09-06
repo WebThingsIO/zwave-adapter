@@ -57,7 +57,8 @@
             "unit": "ampere",
             "value": "0.00",
             "valueId": "2-50-1-5",
-            "visible": true
+            "visible": true,
+            "multipleOf": 0.01
         }
     },
     "title": "zwave-ec424da6-2-Switch",
