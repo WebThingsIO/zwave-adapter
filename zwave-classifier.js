@@ -38,7 +38,7 @@ const AEOTEC_ZW100_PRODUCT_ID = '0x0064'; // Multisensor 6
 const AEOTEC_ZW111_PRODUCT_ID = '0x006f'; // Nano Dimmer with metering
 const AEOTEC_ZW116_PRODUCT_ID = '0x0074'; // Nano Switch
 const AEOTEC_ZW130_PRODUCT_ID = '0x0082'; // WallMote Quad
-const AEOTEC_ZW132_PRODUCT_ID = '0x0064'; // Dual Nano Switch with metering
+const AEOTEC_ZW132_PRODUCT_ID = '0x0084'; // Dual Nano Switch with metering
 const AEOTEC_ZW139_PRODUCT_ID = '0x008b'; // Nano Switch (End of Life)
 const AEOTEC_ZW140_PRODUCT_ID = '0x008c'; // Dual Nano Switch
 const AEOTEC_ZW141_PRODUCT_ID = '0x008d'; // Nano Shutter
@@ -225,20 +225,51 @@ const QUIRKS = [
       productId: AEOTEC_ZW096_PRODUCT_ID,
     },
     excludeProperties: ['level'],
+  },
+  {
+    // Aeotec products which have Enery Metering
+    zwInfo: {
+      manufacturerId: AEOTEC_MANUFACTURER_ID,
+      productIds: [
+        AEOTEC_ZW096_PRODUCT_ID,  // Smart Switch 6
+        AEOTEC_ZW099_PRODUCT_ID,  // Smart Dimmer 6
+        AEOTEC_ZW111_PRODUCT_ID,  // Nano Swith with energy metering
+        AEOTEC_ZW132_PRODUCT_ID,  // Dual Nano Switch with metering
+      ],
+    },
     // polling isn't required with the configuration change below
     disablePoll: true,
     setConfigs: [
       // Enable to send a Basic CC Report when the switch state
       // changes.
       {paramId: 80, value: 2, size: 1},
+      // Setting parameter 90 to 1 causes instantaneous reports to be
+      // sent based on parameters 91 & 92
+      {paramId: 90, value: 1, size: 1},
+      // Parameter 91 is the minimum change (in watts) required to induce
+      // a meter report.
+      {paramId: 91, value: 25, size: 2},
+      // Parameter 92 is the minimum change (in wattage percent) to induce
+      // a meter report.
+      {paramId: 92, value: 5, size: 1},
+      // Setting the following to non-zero causes periodic reports to
+      // be sent based on parameters 111-113
+      {paramId: 101, value: 0, size: 4},
+      {paramId: 102, value: 0, size: 4},
+      {paramId: 103, value: 0, size: 4},
     ],
     isLight: false,
   },
   {
-    // Aeotec Smart Dimmer 6
+    // Aeotec Products without Energy Metering
     zwInfo: {
       manufacturerId: AEOTEC_MANUFACTURER_ID,
-      productId: AEOTEC_ZW099_PRODUCT_ID,
+      productIds: [
+        AEOTEC_ZW116_PRODUCT_ID,  // Nano Switch
+        AEOTEC_ZW139_PRODUCT_ID,  // Nano Switch (End of Life)
+        AEOTEC_ZW140_PRODUCT_ID,  // Dual Nano Switch
+        AEOTEC_ZW141_PRODUCT_ID,  // Nano Shutter
+      ],
     },
     // polling isn't required with the configuration change below
     disablePoll: true,
@@ -298,7 +329,12 @@ const QUIRKS = [
 function quirkMatches(quirk, node) {
   let match = true;
   for (const id in quirk.zwInfo) {
-    if (node.zwInfo[id] !== quirk.zwInfo[id]) {
+    if (id === 'productIds') {
+      if (!quirk.zwInfo.productIds.includes(node.zwInfo.productId)) {
+        match = false;
+        break;
+      }
+    } else if (node.zwInfo[id] !== quirk.zwInfo[id]) {
       match = false;
       break;
     }
@@ -372,7 +408,6 @@ class ZWaveClassifier {
           const zwValue = node.zwValues[valueId];
           if (zwValue) {
             let value = zwValue.value;
-            let valueStr = `${value}`;
             if (zwValue.type == 'list') {
               // For lists, the value contains the looked up string
               // rather than the index. Figure out the index.
@@ -386,22 +421,15 @@ class ZWaveClassifier {
                 continue;
               }
               value = idx;
-              valueStr = `(index ${value})`;
             }
-            if (value == setConfig.value) {
-              console.log(`Device ${node.id} config ` +
-                          `paramId: ${setConfig.paramId} ` +
-                          `already has value: ${valueStr}`);
-            } else {
-              console.log(`Setting device ${node.id} config ` +
-                          `paramId: ${setConfig.paramId} ` +
-                          `to value: ${setConfig.value} ` +
-                          `size: ${setConfig.size}`);
-              zwave.setConfigParam(nodeId,
-                                   setConfig.paramId,
-                                   setConfig.value,
-                                   setConfig.size);
-            }
+            console.log(`Setting device ${node.id} config ` +
+                        `paramId: ${setConfig.paramId} ` +
+                        `to value: ${setConfig.value} ` +
+                        `size: ${setConfig.size}`);
+            zwave.setConfigParam(nodeId,
+                                 setConfig.paramId,
+                                 setConfig.value,
+                                 setConfig.size);
           } else {
             console.error(`Device ${node.id} config ` +
                           `paramId: ${setConfig.paramId} ` +
@@ -1609,6 +1637,9 @@ class ZWaveClassifier {
           label: suffix ? `Current (${suffix})` : 'Current',
           type: 'number',
           unit: 'ampere',
+          // For LED lights at 220V. With only one decimal point, the
+          // current shows 0.0 A for 8 watt device.
+          multipleOf: 0.01,
         },
         currentValueId          // valueId
       );

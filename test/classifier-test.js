@@ -26,7 +26,7 @@ const manifest = JSON.parse(fs.readFileSync('./package.json'));
 function classifyJson(pathname) {
   describe(path.basename(pathname), () => {
     it('properties', () => {
-      console.log('test for', pathname);
+      console.log('=============== Test for', pathname, '===============');
 
       const data = fs.readFileSync(pathname);
       const json = JSON.parse(data);
