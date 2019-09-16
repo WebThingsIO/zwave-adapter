@@ -1,0 +1,37 @@
+name: Node.js application
+
+on:
+  pull_request:
+    branches:
+      - master
+  push:
+    branches:
+      - master
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        node_version: [8, 10, 12]
+    steps:
+      - uses: actions/checkout@v1
+      - uses: actions/setup-node@v1
+        with:
+          node-version: ${{ matrix.node_version }}
+      - name: Install system dependencies
+        run: |
+          sudo apt -qq update
+          sudo apt install -y libudev-dev
+          git clone -b moziot --single-branch --depth=1 https://github.com/mozilla-iot/open-zwave
+          make -C open-zwave
+          sudo make -C open-zwave install
+      - name: Install node dependencies
+        run: |
+          npm install
+      - name: Lint with eslint
+        run: |
+          npm run lint
+      - name: Run unit tests
+        run: |
+          npm run jest
