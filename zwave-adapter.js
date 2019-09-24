@@ -9,8 +9,11 @@
 
 'use strict';
 
-const path = require('path');
 const fs = require('fs');
+const manifest = require('./manifest.json');
+const mkdirp = require('mkdirp');
+const os = require('os');
+const path = require('path');
 const ZWaveNode = require('./zwave-node');
 const zwaveClassifier = require('./zwave-classifier');
 const {
@@ -23,16 +26,35 @@ const {
   DEBUG_flow,
 } = require('./zwave-debug');
 
+function getDataPath() {
+  let profileDir;
+  if (process.env.hasOwnProperty('MOZIOT_HOME')) {
+    profileDir = process.env.MOZIOT_HOME;
+  } else {
+    profileDir = path.join(os.homedir(), '.mozilla-iot');
+  }
+
+  return path.join(profileDir, 'data', 'zwave-adapter');
+}
+
+function getLogPath() {
+  if (process.env.hasOwnProperty('MOZIOT_HOME')) {
+    return path.join(process.env.MOZIOT_HOME, 'log');
+  }
+
+  return path.join(os.homedir(), '.mozilla-iot', 'log');
+}
+
 class ZWaveAdapter extends Adapter {
-  constructor(addonManager, manifest, zwaveModule, port) {
+  constructor(addonManager, config, zwaveModule, port) {
     // The ZWave adapter supports multiple dongles and
     // will create an adapter object for each dongle.
     // We don't know the actual adapter id until we
     // retrieve the home id from the dongle. So we set the
     // adapter id to zwave-unknown here and fix things up
     // later just before we call addAdapter.
-    super(addonManager, 'zwave-unknown', manifest.name);
-    this.manifest = manifest;
+    super(addonManager, 'zwave-unknown', manifest.id);
+    this.config = config;
     this.port = port;
     this.ready = false;
     this.named = false;
@@ -40,14 +62,22 @@ class ZWaveAdapter extends Adapter {
     this.nodes = {};
     this.nodesBeingAdded = {};
 
-    // Default to current directory.
-    let logDir = '.';
-    if (process.env.hasOwnProperty('MOZIOT_HOME')) {
-      // Check user profile directory.
-      const profileDir = path.join(process.env.MOZIOT_HOME, 'log');
-      if (fs.existsSync(profileDir) &&
-          fs.lstatSync(profileDir).isDirectory()) {
-        logDir = profileDir;
+    const logDir = getDataPath();
+    if (!fs.existsSync(logDir)) {
+      mkdirp.sync(logDir, {mode: 0o755});
+    }
+
+    // move any old config files to the new directory
+    const oldLogDir = getLogPath();
+    if (fs.existsSync(oldLogDir)) {
+      const entries = fs.readdirSync(oldLogDir);
+      for (const entry of entries) {
+        if (entry === 'OZW_Log.txt' || entry === 'zwscene.xml' ||
+            /^ozwcache_0x[A-Fa-f0-9]+\.xml/.test(entry)) {
+          const oldPath = path.join(oldLogDir, entry);
+          const newPath = path.join(logDir, entry);
+          fs.renameSync(oldPath, newPath);
+        }
       }
     }
 
@@ -79,7 +109,7 @@ class ZWaveAdapter extends Adapter {
      * A key can be specified by clicking Configure on this add-on in Gateway.
      */
     /* eslint-enable max-len */
-    const networkKey = this.manifest.moziot.config.networkKey;
+    const networkKey = this.config.networkKey;
 
     if (networkKey) {
       // A regex to validate the required network key format shown above
