@@ -93,7 +93,7 @@ fi
 # We exclude the openzwave config dir from the sha256sums since the new version
 # of openzwave is capable of updating config files detected to be out-of-date
 rm -f SHA256SUMS
-sha256sum manifest.json package.json *.js LICENSE > SHA256SUMS
+sha256sum manifest.json package.json *.js zwave-loader.sh LICENSE > SHA256SUMS
 rm -rf node_modules/.bin
 find "node_modules" -type f -exec sha256sum {} \; >> SHA256SUMS
 find "${OZW_LIB_DIR}" -type f -exec sha256sum {} \; >> SHA256SUMS
