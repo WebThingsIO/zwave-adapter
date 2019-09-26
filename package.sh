@@ -68,7 +68,7 @@ fi
 OZW_PKG="libopenzwave"
 OZW_DIR="openzwave"
 OZW_LIB_DIR="${OZW_DIR}/lib"
-OZW_CONFIG_DIR="${OZW_DIR}/config"
+OZW_CONFIG_DIR="${OZW_DIR}/config.orig"
 OZW_LIB_VERSION="$(pkg-config --modversion ${OZW_PKG})"
 OZW_PKG_LIB_DIR="$(pkg-config --variable=libdir ${OZW_PKG})"
 
@@ -90,13 +90,11 @@ if [[ "${ADDON_ARCH}" =~ "linux" ]]; then
   patchelf --set-rpath '$ORIGIN/../../../../openzwave/lib' node_modules/openzwave-shared/build/Release/openzwave_shared.node
 fi
 
-# We exclude the openzwave config dir from the sha256sums since the new version
-# of openzwave is capable of updating config files detected to be out-of-date
 rm -f SHA256SUMS
 sha256sum manifest.json package.json *.js zwave-loader.sh LICENSE > SHA256SUMS
 rm -rf node_modules/.bin
 find "node_modules" -type f -exec sha256sum {} \; >> SHA256SUMS
-find "${OZW_LIB_DIR}" -type f -exec sha256sum {} \; >> SHA256SUMS
+find "${OZW_DIR}" -type f -exec sha256sum {} \; >> SHA256SUMS
 TARFILE="$(npm pack)"
 tar xzf ${TARFILE}
 rm ${TARFILE}
