@@ -1,0 +1,38 @@
+{
+  "author": "Mozilla IoT",
+  "description": "Z-Wave adapter plugin for Mozilla WebThings Gateway",
+  "gateway_specific_settings": {
+    "webthings": {
+      "exec": "{path}/zwave-loader.sh {nodeLoader} {path}",
+      "primary_type": "adapter",
+      "strict_max_version": "*",
+      "strict_min_version": "0.10.0"
+    }
+  },
+  "homepage_url": "https://github.com/mozilla-iot/zwave-adapter",
+  "id": "zwave-adapter",
+  "license": "MPL-2.0",
+  "manifest_version": 1,
+  "name": "Z-Wave",
+  "options": {
+    "default": {
+      "networkKey": "",
+      "debug": ""
+    },
+    "schema": {
+      "type": "object",
+      "properties": {
+        "networkKey": {
+          "type": "string",
+          "description": "16-byte, comma-separated hex string (0xb4,0xc9,etc...)"
+        },
+        "debug": {
+          "type": "string",
+          "default": ""
+        }
+      }
+    }
+  },
+  "short_name": "Z-Wave",
+  "version": "0.10.0"
+}
