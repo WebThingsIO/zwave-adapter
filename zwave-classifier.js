@@ -12,8 +12,6 @@
 
 const ZWaveProperty = require('./zwave-property');
 
-const {Constants} = require('gateway-addon');
-
 const {
   CENTRAL_SCENE,
   COLOR_CAPABILITY,
@@ -1501,13 +1499,6 @@ class ZWaveClassifier {
                 'levelValueId =', levelValueId,
                 'suffix =', suffix);
     if (binarySwitchValueId) {
-      if (suffix) {
-        // Until we have the capabilities system, in order for the UI
-        // to display the second switch, we need to call it a thing.
-        node.type = 'thing';
-      } else {
-        node.type = Constants.THING_TYPE_ON_OFF_SWITCH;
-      }
       this.addProperty(
         node,                     // node
         `on${suffix}`,            // name
@@ -1520,7 +1511,6 @@ class ZWaveClassifier {
       );
       if (levelValueId) {
         if (!suffix) {
-          node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
           node['@type'].push('MultiLevelSwitch');
         }
         this.addProperty(
@@ -1546,7 +1536,6 @@ class ZWaveClassifier {
     } else {
       // For switches which don't support the on/off we fake it using level
       if (!suffix) {
-        node.type = Constants.THING_TYPE_MULTI_LEVEL_SWITCH;
         node['@type'].push('MultiLevelSwitch');
       }
       this.addProperty(
@@ -1584,7 +1573,7 @@ class ZWaveClassifier {
                        METER_INDEX_ELECTRIC_INSTANT_POWER);
     if (powerValueId) {
       if (!suffix) {
-        node.type = Constants.THING_TYPE_SMART_PLUG;
+        node.isSmartPlug = true;
         node['@type'].push('SmartPlug', 'EnergyMonitor');
       }
       this.addProperty(
@@ -1606,7 +1595,7 @@ class ZWaveClassifier {
                        METER_INDEX_ELECTRIC_INSTANT_VOLTAGE);
     if (voltageValueId) {
       if (!suffix) {
-        node.type = Constants.THING_TYPE_SMART_PLUG;
+        node.isSmartPlug = true;
       }
       this.addProperty(
         node,                   // node
@@ -1627,7 +1616,7 @@ class ZWaveClassifier {
                        METER_INDEX_ELECTRIC_INSTANT_CURRENT);
     if (currentValueId) {
       if (!suffix) {
-        node.type = Constants.THING_TYPE_SMART_PLUG;
+        node.isSmartPlug = true;
       }
       this.addProperty(
         node,                   // node
@@ -1653,7 +1642,7 @@ class ZWaveClassifier {
                                   1,                           // instance
                                   80,                          // index
                                   'Basic');                    // value
-      if (node.type === Constants.THING_TYPE_SMART_PLUG) {
+      if (node.isSmartPlug) {
         // Enable METER reporting
         node.adapter.zwave.setValue(node.zwInfo.nodeId,          // nodeId
                                     COMMAND_CLASS.CONFIGURATION, // classId
@@ -1672,7 +1661,6 @@ class ZWaveClassifier {
 
   initBinarySensor(node, binarySensorValueId) {
     if (node.properties.size == 0) {
-      node.type = Constants.THING_TYPE_BINARY_SENSOR;
       node['@type'] = ['DoorSensor', 'BinarySensor'];
     }
     this.addProperty(
