@@ -26,5 +26,11 @@ if [ -d "${OPENZWAVE_LIB_DIR}" ]; then
   fi
 fi
 
+OPENZWAVE_CONFIG_DIR="${ZWAVE_ADAPTER_DIR}/openzwave/config"
+OPENZWAVE_ORIG_CONFIG_DIR="${ZWAVE_ADAPTER_DIR}/openzwave/config.orig"
+if [ ! -d "${OPENZWAVE_CONFIG_DIR}" ]; then
+  cp -r "${OPENZWAVE_ORIG_CONFIG_DIR}" "${OPENZWAVE_CONFIG_DIR}"
+fi
+
 # Using exec replaces the current process with node
 exec ${NODE_CMD} ${ADDON_LOADER} ${ZWAVE_ADAPTER_DIR}
