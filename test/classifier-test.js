@@ -60,6 +60,20 @@ function classifyJson(pathname) {
       for (const jsonPropertyName in json.properties) {
         expect(node.properties.has(jsonPropertyName)).toBeTruthy();
       }
+
+      node.actions.forEach((action, actionName) => {
+        console.log('Testing action', actionName);
+        if (json.actions.hasOwnProperty(actionName)) {
+          const jsonAction = json.actions[actionName];
+          expect(action).toEqual(jsonAction);
+        } else {
+          fail(`Missing action ${actionName}`);
+        }
+      });
+
+      for (const jsonActionName in json.actions) {
+        expect(node.actions.has(jsonActionName)).toBeTruthy();
+      }
     });
   });
 }

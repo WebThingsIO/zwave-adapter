@@ -156,6 +156,17 @@ class ZWaveProperty extends Property {
     ];
   }
 
+  // Convert a boolean into a LockedProperty
+  parseZwDoorLocked(zwData) {
+    const value = zwData ? 'unlocked' : 'locked';
+    return [value, `${value} zw: zwData`];
+  }
+
+  parseZwStringToLowerCase(zwData) {
+    const value = zwData.toString().toLowerCase();
+    return [value, `${value} zw: ${zwData}`];
+  }
+
   parseTemperatureZwValue(zwData) {
     const zwValue = this.device.zwValues[this.valueId];
     if (zwValue.units === 'F') {
@@ -225,18 +236,27 @@ class ZWaveProperty extends Property {
     return [zwData, zwData.toString()];
   }
 
-  setListValue(value) {
-    // For a list, the value will be a string. Find the matching
-    // string.
+  setLowerCaseValue(value) {
+    value = value.toLowerCase();
     const zwValue = this.device.zwValues[this.valueId];
-    if (zwValue) {
-      const idx = zwValue.values.indexOf(value);
-      if (idx < 0) {
-        return [0, `${value} not found - using 0`];
-      }
-      return [idx, `${value} (${idx})`];
+    if (!zwValue || !zwValue.values) {
+      return [value, value.toString()];
     }
-    return [0, `valueId ${this.valueId} not found - using 0`];
+    const idx = this.lowerCaseValues.indexOf(value);
+    if (idx < 0) {
+      return [value, value.toString()];
+    }
+    const zwData = zwValue.values[idx];
+    return [zwData, `${value} zw: ${zwData}`];
+  }
+
+  setTemperatureValue(value) {
+    const zwValue = this.device.zwValues[this.valueId];
+    if (zwValue.units === 'F') {
+      const zwData = value * 1.8 + 32;
+      return [zwData, `${value}C zw:${zwData}F`];
+    }
+    return [value, `${value}C zw:${value}C`];
   }
 
   /**
