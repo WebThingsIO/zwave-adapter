@@ -2638,16 +2638,25 @@
   "title": "zwave-d7e613b4-11-Current Record Number",
   "type": "thing",
   "@context": "https://iot.mozilla.org/schemas",
-  "@type": [],
+  "@type": ["Lock"],
   "description": "",
   "properties": {
     "locked": {
       "name": "locked",
-      "value": false,
+      "value": "unlocked",
       "visible": true,
-      "title": "Locked",
+      "title": "State",
+      "@type": "LockedProperty",
+      "enum": ["locked", "unlocked", "jammed", "unknown"],
+      "type": "string"
+    },
+    "_lockedInternal": {
       "@type": "BooleanProperty",
+      "name": "_lockedInternal",
+      "title": "_locked",
       "type": "boolean",
+      "value": false,
+      "visible": false,
       "valueId": "11-98-1-0"
     },
     "_alarmType": {
@@ -2671,7 +2680,18 @@
       "valueId": "11-128-1-0"
     }
   },
-  "actions": {},
+  "actions": {
+    "lock": {
+      "@type": "LockAction",
+      "title": "Lock",
+      "description": "Lock the deadbolt"
+    },
+    "unlock": {
+      "@type": "UnlockAction",
+      "title": "Unlock",
+      "description": "Unlock the deadbolt"
+    }
+  },
   "events": {},
   "links": []
 }
