@@ -459,6 +459,7 @@
       "visible": true,
       "title": "Fan State",
       "type": "string",
+      "readOnly": true,
       "valueId": "5-69-1-0"
     },
     "temperature": {

@@ -879,6 +879,7 @@ class ZWaveClassifier {
       {
         title: 'Fan State',
         type: 'string',
+        readOnly: true,
       },
       fanStateValueId
     );
@@ -1847,7 +1848,7 @@ class ZWaveClassifier {
           type: 'string',
           title: 'State',
           enum: ['locked', 'unlocked', 'jammed', 'unknown'],
-          readonly: true,
+          readOnly: true,
         }
       );
       // Setting this property controls the door lock, and it's value
@@ -1891,7 +1892,7 @@ class ZWaveClassifier {
         '_alarmType',
         {
           type: 'number',
-          readonly: true,
+          readOnly: true,
         },
         alarmValueId
       );
