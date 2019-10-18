@@ -20,6 +20,9 @@ class MockAddonManager extends EventEmitter {
     this.nodes[node.nodeId] = node;
   }
 
+  sendPropertyChangedNotification(_property) {
+  }
+
 }
 
 module.exports = MockAddonManager;
