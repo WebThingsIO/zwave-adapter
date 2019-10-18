@@ -156,6 +156,12 @@ class ZWaveProperty extends Property {
     ];
   }
 
+  // Convert a boolean into a LockedProperty
+  parseZwDoorLocked(zwData) {
+    const value = zwData ? 'unlocked' : 'locked';
+    return [value, `${value} zw: zwData`];
+  }
+
   parseZwStringToLowerCase(zwData) {
     const value = zwData.toString().toLowerCase();
     return [value, `${value} zw: ${zwData}`];

@@ -676,6 +676,12 @@ class ZWaveClassifier {
     }
   }
 
+  addActions(node, actions) {
+    for (const actionName in actions) {
+      node.addAction(actionName, actions[actionName]);
+    }
+  }
+
   addEvents(node, events) {
     for (const eventName in events) {
       node.addEvent(eventName, events[eventName]);
@@ -1827,18 +1833,52 @@ class ZWaveClassifier {
 
   initEntryControl(node, doorLockValueId) {
     node.name = `${node.id}-DoorLock`;
+    node['@type'] = ['Lock'];
 
     if (doorLockValueId) {
-      node.doorLockProperty = this.addProperty(
+      // The ZWave door lock is both state and control, so we create
+      // a hidden property which is boolean, and have the visible state
+      // be an enumeration.
+      node.doorLockState = this.addProperty(
         node,
         'locked',
         {
+          '@type': 'LockedProperty',
+          type: 'string',
+          title: 'State',
+          enum: ['locked', 'unlocked', 'jammed', 'unknown'],
+          readonly: true,
+        }
+      );
+      // Setting this property controls the door lock, and it's value
+      // reflects its current state.
+      node.doorLockProperty = this.addProperty(
+        node,
+        '_lockedInternal',
+        {
           '@type': 'BooleanProperty',
           type: 'boolean',
-          label: 'Locked',
+          title: '_locked',
         },
-        doorLockValueId
+        doorLockValueId,
       );
+      // When the door lock state changes, we update the visible state
+      // property.
+      node.doorLockProperty.updated = function() {
+        const state = node.doorLockProperty.value ? 'locked' : 'unlocked';
+        node.setPropertyValue(node.doorLockState, state);
+        if (node.doorLockTimeout) {
+          clearTimeout(node.doorLockTimeout);
+          node.doorLockTimeout = null;
+        }
+        if (node.doorLockAction) {
+          const doorLockAction = node.doorLockAction;
+          node.doorLockAction = null;
+          doorLockAction.finish();
+        }
+      };
+      // Set the initial state. Assume that the doorlock isn't jammed.
+      node.doorLockProperty.updated();
     }
 
     const alarmValueId =
@@ -1882,6 +1922,18 @@ class ZWaveClassifier {
         };
       }
     }
+    this.addActions(node, {
+      lock: {
+        '@type': 'LockAction',
+        title: 'Lock',
+        description: 'Lock the deadbolt',
+      },
+      unlock: {
+        '@type': 'UnlockAction',
+        title: 'Unlock',
+        description: 'Unlock the deadbolt',
+      },
+    });
   }
 
   initThermostat(node) {
