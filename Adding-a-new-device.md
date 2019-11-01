@@ -162,7 +162,7 @@ cli http://localhost:8080 zwave-e9880e42-9> info
 
 You can use the info command followed by a filename and it will store
 the output in the named file rather than sending it to stdout. Once a
-device is functioning peoperly, I use the info command to create the
+device is functioning properly, I use the info command to create the
 files found in the zwave-adapter/test/classifier directory (so there
 are lots of files to look at as examples).
 

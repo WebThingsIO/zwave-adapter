@@ -9,7 +9,7 @@ dongle with the HomeID it was paired with.
 
 Factory resetting the dongle will assign a new randomly generated HomeID.
 
-### NodeI
+### NodeID
 
 NodeIDs are in the range 1-255 and refers to the particular device that
 you're dealing with. NodeId 1 is assigned to the dongle and remaining
@@ -55,7 +55,7 @@ Once a node becomes ready, the classifier is called.
 The classifier uses the devices "genericType" along with the presence of
 various valueIds to determine the type and properties of the device.
 
-OpenZWave uses a device databse to describe configuration parameters
+OpenZWave uses a device database to describe configuration parameters
 for each device. These configuration parameters often change how the
 device behaves. As part of the classification process, the classifier
 will often configure the device to behave in a manner which is more
