@@ -27,6 +27,11 @@ const COMMAND_CLASS = {
   SENSOR_MULTILEVEL: 49,      // 0x31
   COLOR: 51,                  // 0x33
   METER: 50,                  // 0x32
+  THERMOSTAT_MODE: 64,        // 0x40
+  THERMOSTAT_OPERATING_STATE: 66, // 0x42
+  THERMOSTAT_SETPOINT: 67,    // 0x43
+  THERMOSTAT_FAN_MODE: 68,    // 0x44
+  THERMOSTAT_FAN_STATE: 69,   // 0x45
   DOOR_LOCK_LOGGING: 76,      // 0x4c
   CENTRAL_SCENE: 91,          // 0x5b
   ZWAVE_PLUS_INFO: 94,        // 0x5e

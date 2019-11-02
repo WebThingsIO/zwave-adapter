@@ -217,6 +217,22 @@ const WAKEUP_INTERVAL_VALUE = 0;
 const WAKEUP_INTERVAL_MIN = 1;
 const WAKEUP_INTERVAL_MAX = 2;
 
+// From ValueIDIndexesDefines.def (ValueID_Index_ThermostatMode)
+const THERMOSTAT_INDEX_MODE = 0;
+
+// From ValueIDIndexesDefines.def (ValueID_Index_ThermostatOperatingState)
+const THERMOSTAT_INDEX_OPERATING_STATE = 0;
+
+// From ValueIDIndexesDefines.def (ValueID_Index_ThermostatSetpoint)
+const THERMOSTAT_INDEX_SETPOINT_HEATING = 1;
+const THERMOSTAT_INDEX_SETPOINT_COOLING = 2;
+
+// From ValueIDIndexesDefines.def (ValueID_Index_ThermostatFanMode)
+const THERMOSTAT_INDEX_FAN_MODE = 0;
+
+// From ValueIDIndexesDefines.def (ValueID_Index_ThermostatFanState)
+const THERMOSTAT_INDEX_FAN_STATE = 0;
+
 const QUIRKS = [
   {
     // The Aeotec devices don't seem to notify on current changes, only on
@@ -640,6 +656,10 @@ class ZWaveClassifier {
         this.initEntryControl(node, doorLockValueId);
         break;
 
+      case GENERIC_TYPE.THERMOSTAT:
+        this.initThermostat(node);
+        break;
+
       default: {
         const genericTypeStr = GENERIC_TYPE_STR[genericType] || 'unknown';
         console.error(`Node: ${nodeId}`,
@@ -680,6 +700,12 @@ class ZWaveClassifier {
     }
   }
 
+  addActions(node, actions) {
+    for (const actionName in actions) {
+      node.addAction(actionName, actions[actionName]);
+    }
+  }
+
   addEvents(node, events) {
     for (const eventName in events) {
       node.addEvent(eventName, events[eventName]);
@@ -700,11 +726,12 @@ class ZWaveClassifier {
         return;
       }
     }
-    DEBUG && console.log(`classify: ${node.id} adding property: ${name}`);
-
     const property = new ZWaveProperty(node, name, descr, valueId,
                                        setZwValueFromValue,
                                        parseValueFromZwValue);
+    DEBUG && console.log(`classify: ${node.id} added property: ${name}`,
+                         `valueId: ${valueId} value: ${property.value}`);
+
     node.properties.set(name, property);
     if (name[0] == '_') {
       property.visible = false;
@@ -794,7 +821,7 @@ class ZWaveClassifier {
       'temperature',
       {
         '@type': 'TemperatureProperty',
-        label: 'Temperature',
+        title: 'Temperature',
         type: 'number',
         unit: 'degree celsius',
         multipleOf: 0.1,
@@ -822,6 +849,120 @@ class ZWaveClassifier {
         multipleOf: 0.1,
       },
       carbonMonoxideValueId,
+    );
+  }
+
+  addHeatingTargetTemperatureProperty(node, heatingTargetTempValueId) {
+    this.addProperty(
+      node,
+      'heatingTargetTemperature',
+      {
+        '@type': 'TargetTemperatureProperty',
+        title: 'Heating Target',
+        type: 'number',
+        unit: 'degree celsius',
+        multipleOf: 0.5,
+        minimum: 0,
+        maximum: 40,
+      },
+      heatingTargetTempValueId,
+      'setTemperatureValue',
+      'parseTemperatureZwValue'
+    );
+  }
+
+  addCoolingTargetTemperatureProperty(node, coolingTargetTempValueId) {
+    this.addProperty(
+      node,
+      'coolingTargetTemperature',
+      {
+        '@type': 'TargetTemperatureProperty',
+        title: 'Cooling Target',
+        type: 'number',
+        unit: 'degree celsius',
+        multipleOf: 0.5,
+        minimum: 0,
+        maximum: 40,
+      },
+      coolingTargetTempValueId,
+      'setTemperatureValue',
+      'parseTemperatureZwValue'
+    );
+  }
+
+  addFanModeProperty(node, fanModeValueId) {
+    const zwValue = node.zwValues[fanModeValueId];
+    if (!zwValue) {
+      return;
+    }
+    this.addProperty(
+      node,
+      'fanMode',
+      {
+        title: 'Fan Mode',
+        type: 'string',
+        enum: zwValue.values,
+      },
+      fanModeValueId
+    );
+  }
+
+  addFanStateProperty(node, fanStateValueId) {
+    const zwValue = node.zwValues[fanStateValueId];
+    if (!zwValue) {
+      return;
+    }
+    this.addProperty(
+      node,
+      'fanState',
+      {
+        title: 'Fan State',
+        type: 'string',
+        readOnly: true,
+      },
+      fanStateValueId
+    );
+  }
+
+  addThermostatModeProperty(node, thermostatModeValueId) {
+    const zwValue = node.zwValues[thermostatModeValueId];
+    if (!zwValue) {
+      return;
+    }
+    const lowerCaseValues = zwValue.values.map((v) => v.toLowerCase());
+    const property = this.addProperty(
+      node,
+      'thermostatMode',
+      {
+        title: 'Mode',
+        type: 'string',
+        '@type': 'ThermostatModeProperty',
+        enum: lowerCaseValues,
+      },
+      thermostatModeValueId,
+      'setLowerCaseValue',
+      'parseZwStringToLowerCase'
+    );
+    property.lowerCaseValues = lowerCaseValues;
+  }
+
+  addThermostatStateProperty(node, thermostatStateValueId) {
+    const zwValue = node.zwValues[thermostatStateValueId];
+    if (!zwValue) {
+      return;
+    }
+    this.addProperty(
+      node,
+      'heating',
+      {
+        title: 'Heating/Cooling',
+        type: 'string',
+        '@type': 'HeatingCoolingProperty',
+        readOnly: true,
+      },
+      thermostatStateValueId,
+      null,
+      'parseZwStringToLowerCase'
     );
   }
 
@@ -1732,18 +1873,52 @@ class ZWaveClassifier {
 
   initEntryControl(node, doorLockValueId) {
     node.name = `${node.id}-DoorLock`;
+    node['@type'] = ['Lock'];
 
     if (doorLockValueId) {
-      node.doorLockProperty = this.addProperty(
+      // The ZWave door lock is both state and control, so we create
+      // a hidden property which is boolean, and have the visible state
+      // be an enumeration.
+      node.doorLockState = this.addProperty(
         node,
         'locked',
         {
+          '@type': 'LockedProperty',
+          type: 'string',
+          title: 'State',
+          enum: ['locked', 'unlocked', 'jammed', 'unknown'],
+          readOnly: true,
+        }
+      );
+      // Setting this property controls the door lock, and it's value
+      // reflects its current state.
+      node.doorLockProperty = this.addProperty(
+        node,
+        '_lockedInternal',
+        {
           '@type': 'BooleanProperty',
           type: 'boolean',
-          label: 'Locked',
+          title: '_locked',
         },
-        doorLockValueId
+        doorLockValueId,
       );
+      // When the door lock state changes, we update the visible state
+      // property.
+      node.doorLockProperty.updated = function() {
+        const state = node.doorLockProperty.value ? 'locked' : 'unlocked';
+        node.setPropertyValue(node.doorLockState, state);
+        if (node.doorLockTimeout) {
+          clearTimeout(node.doorLockTimeout);
+          node.doorLockTimeout = null;
+        }
+        if (node.doorLockAction) {
+          const doorLockAction = node.doorLockAction;
+          node.doorLockAction = null;
+          doorLockAction.finish();
+        }
+      };
+      // Set the initial state. Assume that the doorlock isn't jammed.
+      node.doorLockProperty.updated();
     }
 
     const alarmValueId =
@@ -1756,7 +1931,7 @@ class ZWaveClassifier {
         '_alarmType',
         {
           type: 'number',
-          readonly: true,
+          readOnly: true,
         },
         alarmValueId
       );
@@ -1786,6 +1961,73 @@ class ZWaveClassifier {
           }
         };
       }
+    }
+    this.addActions(node, {
+      lock: {
+        '@type': 'LockAction',
+        title: 'Lock',
+        description: 'Lock the deadbolt',
+      },
+      unlock: {
+        '@type': 'UnlockAction',
+        title: 'Unlock',
+        description: 'Unlock the deadbolt',
+      },
+    });
+  }
+
+  initThermostat(node) {
+    node.name = `${node.id}-Thermostat`;
+    node['@type'] = ['Thermostat'];
+
+    const thermostatStateValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_OPERATING_STATE,
+                       1,
+                       THERMOSTAT_INDEX_OPERATING_STATE);
+    if (thermostatStateValueId) {
+      this.addThermostatStateProperty(node, thermostatStateValueId);
+    }
+
+    const thermostatModeValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_MODE,
+                       1,
+                       THERMOSTAT_INDEX_MODE);
+    if (thermostatModeValueId) {
+      this.addThermostatModeProperty(node, thermostatModeValueId);
+    }
+
+    // The current temperature property is added automatically.
+
+    const heatingTargetTempValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_SETPOINT,
+                       1,
+                       THERMOSTAT_INDEX_SETPOINT_HEATING);
+    if (heatingTargetTempValueId) {
+      this.addHeatingTargetTemperatureProperty(node, heatingTargetTempValueId);
+    }
+
+    const coolingTargetTempValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_SETPOINT,
+                       1,
+                       THERMOSTAT_INDEX_SETPOINT_COOLING);
+    if (coolingTargetTempValueId) {
+      this.addCoolingTargetTemperatureProperty(node, coolingTargetTempValueId);
+    }
+
+    const fanModeValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_FAN_MODE,
+                       1,
+                       THERMOSTAT_INDEX_FAN_MODE);
+    if (fanModeValueId) {
+      this.addFanModeProperty(node, fanModeValueId);
+    }
+
+    const fanStateValueId =
+      node.findValueId(COMMAND_CLASS.THERMOSTAT_FAN_STATE,
+                       1,
+                       THERMOSTAT_INDEX_FAN_STATE);
+    if (fanStateValueId) {
+      this.addFanStateProperty(node, fanStateValueId);
     }
   }
 }
