@@ -6,7 +6,8 @@
       "exec": "{path}/zwave-loader.sh {nodeLoader} {path}",
       "primary_type": "adapter",
       "strict_max_version": "*",
-      "strict_min_version": "0.10.0"
+      "strict_min_version": "0.10.0",
+      "enabled": true
     }
   },
   "homepage_url": "https://github.com/mozilla-iot/zwave-adapter",
@@ -34,5 +35,5 @@
     }
   },
   "short_name": "Z-Wave",
-  "version": "0.10.1"
+  "version": "0.10.2"
 }
