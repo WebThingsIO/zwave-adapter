@@ -1284,6 +1284,17 @@
       "readOnly": true,
       "valueId": "3-113-1-7"
     },
+    "overheat": {
+      "name": "overheat",
+      "value": false,
+      "visible": true,
+      "title": "Overheat",
+      "type": "boolean",
+      "@type": "AlarmProperty",
+      "description": "Overheat property",
+      "readOnly": true,
+      "valueId": "3-113-1-4"
+    },
     "temperature": {
       "name": "temperature",
       "value": "29.2",
@@ -1320,6 +1331,17 @@
       "maximum": 100,
       "readOnly": true,
       "valueId": "3-128-1-0"
+    },
+    "carbonMonoxideLevel": {
+      "name": "carbonMonoxideLevel",
+      "value": "0.0",
+      "visible": true,
+      "title": "Carbon Monoxide Level",
+      "type": "number",
+      "unit": "Ppm",
+      "readOnly": true,
+      "multipleOf": 0.1,
+      "valueId": "3-49-1-40"
     }
   },
   "actions": {},

@@ -75,6 +75,7 @@ const ALARM_INDEX_TYPE_V1 = 512;
 
 const NOTIFICATION_SMOKE_DETECTOR = 1;
 const NOTIFICATION_CO_DETECTOR = 2;
+const NOTIFICATION_OVERHEAT = 4;
 const NOTIFICATION_WATER_LEAK = 5;
 const NOTIFICATION_ACCESS_CONTROL = 6;
 const NOTIFICATION_HOME_SECURITY = 7;
@@ -102,6 +103,18 @@ const NOTIFICATION_SENSOR = {
       type: 'boolean',
       label: 'CO',
       description: 'Carbon Monoxide Detector',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
+  },
+  [NOTIFICATION_OVERHEAT]: {// 4
+    name: 'overheat',
+    propertyName: 'overheat',
+    propertyDescr: {
+      '@type': 'AlarmProperty',
+      type: 'boolean',
+      label: 'Overheat',
+      description: 'Overheat property',
       readOnly: true,
     },
     valueListMap: [false, true],
@@ -187,6 +200,7 @@ const SENSOR_MULTILEVEL_INDEX_TEMPERATURE = 1;
 const SENSOR_MULTILEVEL_INDEX_LUMINANCE = 3;
 const SENSOR_MULTILEVEL_INDEX_RELATIVE_HUMIDITY = 5;
 const SENSOR_MULTILEVEL_INDEX_ULTRAVIOLET = 27;
+const SENSOR_MULTILEVEL_INDEX_CO_LEVEL = 40;
 
 // This would be from SwitchBinary.cpp, but it only has a single index.
 const SWITCH_BINARY_INDEX_SWITCH = 0;
@@ -498,6 +512,10 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
                        1,
                        SENSOR_MULTILEVEL_INDEX_TEMPERATURE);
+    const carbonMonoxideValueId =
+      node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
+                       1,
+                       SENSOR_MULTILEVEL_INDEX_CO_LEVEL);
     const luminanceValueId =
       node.findValueId(COMMAND_CLASS.SENSOR_MULTILEVEL,
                        1,
@@ -545,6 +563,8 @@ class ZWaveClassifier {
                   minWakeUpIntervalValueId);
       console.log('classify:   maxWakeUpIntervalValueId =',
                   maxWakeUpIntervalValueId);
+      console.log('classify:   carbonMonoxideValueId  =',
+                  carbonMonoxideValueId);
 
       console.log('classify:   quirk.isLight       =', node.isLight);
     }
@@ -655,6 +675,10 @@ class ZWaveClassifier {
 
     if (temperatureValueId) {
       this.addTemperatureProperty(node, temperatureValueId);
+    }
+
+    if (carbonMonoxideValueId) {
+      this.addCarbonMonoxideLevelProperty(node, carbonMonoxideValueId);
     }
 
     if (luminanceValueId) {
@@ -811,6 +835,21 @@ class ZWaveClassifier {
     if (!node['@type'].includes('TemperatureSensor')) {
       node['@type'].push('TemperatureSensor');
     }
+  }
+
+  addCarbonMonoxideLevelProperty(node, carbonMonoxideValueId) {
+    this.addProperty(
+      node,
+      'carbonMonoxideLevel',
+      {
+        label: 'Carbon Monoxide Level',
+        type: 'number',
+        readOnly: true,
+        unit: 'Ppm',
+        multipleOf: 0.1,
+      },
+      carbonMonoxideValueId,
+    );
   }
 
   addHeatingTargetTemperatureProperty(node, heatingTargetTempValueId) {
