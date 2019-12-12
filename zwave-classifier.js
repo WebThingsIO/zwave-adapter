@@ -79,6 +79,7 @@ const NOTIFICATION_OVERHEAT = 4;
 const NOTIFICATION_WATER_LEAK = 5;
 const NOTIFICATION_ACCESS_CONTROL = 6;
 const NOTIFICATION_HOME_SECURITY = 7;
+const NOTIFICATION_COMBUSTIBLE_GAS = 18;
 
 const NOTIFICATION_SENSOR = {
   [NOTIFICATION_SMOKE_DETECTOR]: {// 1
@@ -158,6 +159,19 @@ const NOTIFICATION_SENSOR = {
       readOnly: true,
     },
     valueMap: ['Clear', 'Motion'],
+  },
+  [NOTIFICATION_COMBUSTIBLE_GAS]: {// 18
+    name: 'combustible_gas',
+    '@type': ['Alarm'],
+    propertyName: 'combustible_gas',
+    propertyDescr: {
+      '@type': 'AlarmProperty',
+      type: 'boolean',
+      label: 'Combustible Gas',
+      description: 'Combustible Gas Detector',
+      readOnly: true,
+    },
+    valueListMap: [false, true],
   },
 };
 
