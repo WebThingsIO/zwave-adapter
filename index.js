@@ -64,10 +64,7 @@ function isZWavePort(port) {
 //        Upon failure, callback is invoked as callback(err) instead.
 //
 function findZWavePort(callback) {
-  SerialPort.list(function listPortsCallback(error, ports) {
-    if (error) {
-      callback(error);
-    }
+  SerialPort.list().then((ports) => {
     for (const port of ports) {
       // Under OSX, SerialPort.list returns the /dev/tty.usbXXX instead
       // /dev/cu.usbXXX. tty.usbXXX requires DCD to be asserted which
@@ -76,12 +73,16 @@ function findZWavePort(callback) {
       if (port.comName.startsWith('/dev/tty.usb')) {
         port.comName = port.comName.replace('/dev/tty', '/dev/cu');
       }
+
       if (isZWavePort(port)) {
         callback(null, port);
         return;
       }
     }
+
     callback('No ZWave port found');
+  }).catch((error) => {
+    callback(error);
   });
 }
 
