@@ -44,6 +44,9 @@ const AEOTEC_ZW141_PRODUCT_ID = '0x008d'; // Nano Shutter
 const ECOLINK_MANUFACTURER_ID = '0x014a';
 const ECOLINK_FLOOD_FREEZE_PRODUCT_ID = '0x0010';
 
+const FIRST_ALERT_MANUFACTURER_ID = '0x0138';
+const FIRST_ALERT_ZCOMBO_PRODUCT_ID = '0x0002';
+
 function nodeHasAeotecS1S2Mode(node) {
   // These devices have an S1 and S2 input which can control the output(s).
   // They also have config options which determine which type of external
@@ -660,6 +663,10 @@ class ZWaveClassifier {
       case GENERIC_TYPE.SENSOR_MULTILEVEL:
       case GENERIC_TYPE.SENSOR_NOTIFICATION:
         this.initSensorNotification(node);
+        break;
+
+      case GENERIC_TYPE.SENSOR_ALARM:
+        this.initSensorAlarm(node);
         break;
 
       case GENERIC_TYPE.WALL_CONTROLLER:
@@ -1467,6 +1474,79 @@ class ZWaveClassifier {
     node.updatingColorHex = true;
     colorHexProperty.updated();
     node.updatingColorHex = false;
+  }
+
+  initSensorAlarm(node) {
+    const alarmTypeValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_TYPE_V1);
+
+    node.alarmTypeProperty = this.addProperty(
+      node,
+      '_alarmType',
+      {
+        type: 'number',
+        readOnly: true,
+      },
+      alarmTypeValueId
+    );
+
+    if (node.zwInfo.manufacturerId === FIRST_ALERT_MANUFACTURER_ID &&
+        node.zwInfo.productId === FIRST_ALERT_ZCOMBO_PRODUCT_ID) {
+      if (!node['@type'].includes('Alarm')) {
+        node['@type'].push('Alarm');
+      }
+
+      node.smokeProperty = this.addProperty(
+        node,
+        'smoke',
+        {
+          '@type': 'AlarmProperty',
+          type: 'boolean',
+          label: 'Smoke',
+          description: 'Smoke Detector',
+          readOnly: true,
+        }
+      );
+
+      node.coProperty = this.addProperty(
+        node,
+        'co',
+        {
+          '@type': 'AlarmProperty',
+          type: 'boolean',
+          label: 'CO',
+          description: 'Carbon Monoxide Detector',
+          readOnly: true,
+        }
+      );
+
+      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
+      // the alarm type value
+      node.alarmTypeProperty.updated = function() {
+        switch (node.alarmTypeProperty.value) {
+          /**
+           * TODO: determine the proper values here
+          case X:
+            node.setPropertyValue(node.smokeProperty, true);
+            node.setPropertyValue(node.coProperty, false);
+            break;
+          case Y:
+            node.setPropertyValue(node.coProperty, true);
+            node.setPropertyValue(node.smokeProperty, false);
+            break;
+           */
+          default:
+            node.setPropertyValue(node.coProperty, false);
+            node.setPropertyValue(node.smokeProperty, false);
+            break;
+        }
+      };
+
+      // Set the initial state
+      node.alarmTypeProperty.updated();
+    }
   }
 
   initSensorNotification(node) {
