@@ -1509,6 +1509,9 @@ class ZWaveClassifier {
 
     if (node.zwInfo.manufacturerId === FIRST_ALERT_MANUFACTURER_ID &&
         node.zwInfo.productId === FIRST_ALERT_ZCOMBO_PRODUCT_ID) {
+      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
+      // the alarm type value
+
       if (!node['@type'].includes('Alarm')) {
         node['@type'].push('Alarm');
       }
@@ -1553,6 +1556,13 @@ class ZWaveClassifier {
             node.setPropertyValue(node.smokeProperty, false);
             break;
           }
+          case 12: {
+            // alarm test
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.smokeProperty, active);
+            node.setPropertyValue(node.coProperty, active);
+            break;
+          }
           default: {
             node.setPropertyValue(node.coProperty, false);
             node.setPropertyValue(node.smokeProperty, false);
@@ -1561,8 +1571,6 @@ class ZWaveClassifier {
         }
       };
 
-      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
-      // the alarm type value
       node.alarmTypeProperty.updated = updateAlarms;
       node.alarmLevelProperty.updated = updateAlarms;
 
