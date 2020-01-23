@@ -1,7 +1,7 @@
 {
   "name": "zwave-adapter",
   "display_name": "Z-Wave",
-  "version": "0.10.3",
+  "version": "0.10.4",
   "description": "Z-Wave adapter plugin for Mozilla WebThings Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",

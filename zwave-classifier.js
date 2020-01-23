@@ -44,6 +44,9 @@ const AEOTEC_ZW141_PRODUCT_ID = '0x008d'; // Nano Shutter
 const ECOLINK_MANUFACTURER_ID = '0x014a';
 const ECOLINK_FLOOD_FREEZE_PRODUCT_ID = '0x0010';
 
+const FIRST_ALERT_MANUFACTURER_ID = '0x0138';
+const FIRST_ALERT_ZCOMBO_PRODUCT_ID = '0x0002';
+
 function nodeHasAeotecS1S2Mode(node) {
   // These devices have an S1 and S2 input which can control the output(s).
   // They also have config options which determine which type of external
@@ -68,6 +71,7 @@ function nodeHasAeotecS1S2Mode(node) {
 // mentioned above).
 const ALARM_INDEX_HOME_SECURITY = 10;
 const ALARM_INDEX_TYPE_V1 = 512;
+const ALARM_INDEX_LEVEL_V1 = 513;
 
 // The following come from:
 // SDS13713 Notification Command Class, list of assigned Notifications.xlsx
@@ -660,6 +664,10 @@ class ZWaveClassifier {
       case GENERIC_TYPE.SENSOR_MULTILEVEL:
       case GENERIC_TYPE.SENSOR_NOTIFICATION:
         this.initSensorNotification(node);
+        break;
+
+      case GENERIC_TYPE.SENSOR_ALARM:
+        this.initSensorAlarm(node);
         break;
 
       case GENERIC_TYPE.WALL_CONTROLLER:
@@ -1467,6 +1475,108 @@ class ZWaveClassifier {
     node.updatingColorHex = true;
     colorHexProperty.updated();
     node.updatingColorHex = false;
+  }
+
+  initSensorAlarm(node) {
+    const alarmTypeValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_TYPE_V1);
+    const alarmLevelValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_LEVEL_V1);
+
+    node.alarmTypeProperty = this.addProperty(
+      node,
+      '_alarmType',
+      {
+        type: 'number',
+        readOnly: true,
+      },
+      alarmTypeValueId
+    );
+
+    node.alarmLevelProperty = this.addProperty(
+      node,
+      '_alarmLevel',
+      {
+        type: 'number',
+        readOnly: true,
+      },
+      alarmLevelValueId
+    );
+
+    if (node.zwInfo.manufacturerId === FIRST_ALERT_MANUFACTURER_ID &&
+        node.zwInfo.productId === FIRST_ALERT_ZCOMBO_PRODUCT_ID) {
+      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
+      // the alarm type value
+
+      if (!node['@type'].includes('Alarm')) {
+        node['@type'].push('Alarm');
+      }
+
+      node.smokeProperty = this.addProperty(
+        node,
+        'smoke',
+        {
+          '@type': 'AlarmProperty',
+          type: 'boolean',
+          label: 'Smoke',
+          description: 'Smoke Detector',
+          readOnly: true,
+        }
+      );
+
+      node.coProperty = this.addProperty(
+        node,
+        'co',
+        {
+          '@type': 'AlarmProperty',
+          type: 'boolean',
+          label: 'CO',
+          description: 'Carbon Monoxide Detector',
+          readOnly: true,
+        }
+      );
+
+      const updateAlarms = () => {
+        switch (node.alarmTypeProperty.value) {
+          case 1: {
+            // smoke alarm
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.smokeProperty, active);
+            node.setPropertyValue(node.coProperty, false);
+            break;
+          }
+          case 2: {
+            // co alarm
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.coProperty, active);
+            node.setPropertyValue(node.smokeProperty, false);
+            break;
+          }
+          case 12: {
+            // alarm test
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.smokeProperty, active);
+            node.setPropertyValue(node.coProperty, active);
+            break;
+          }
+          default: {
+            node.setPropertyValue(node.coProperty, false);
+            node.setPropertyValue(node.smokeProperty, false);
+            break;
+          }
+        }
+      };
+
+      node.alarmTypeProperty.updated = updateAlarms;
+      node.alarmLevelProperty.updated = updateAlarms;
+
+      // Set the initial state
+      node.alarmTypeProperty.updated();
+    }
   }
 
   initSensorNotification(node) {
