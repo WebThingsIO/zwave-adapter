@@ -71,6 +71,7 @@ function nodeHasAeotecS1S2Mode(node) {
 // mentioned above).
 const ALARM_INDEX_HOME_SECURITY = 10;
 const ALARM_INDEX_TYPE_V1 = 512;
+const ALARM_INDEX_LEVEL_V1 = 513;
 
 // The following come from:
 // SDS13713 Notification Command Class, list of assigned Notifications.xlsx
@@ -1481,6 +1482,10 @@ class ZWaveClassifier {
       node.findValueId(COMMAND_CLASS.ALARM,
                        1,
                        ALARM_INDEX_TYPE_V1);
+    const alarmLevelValueId =
+      node.findValueId(COMMAND_CLASS.ALARM,
+                       1,
+                       ALARM_INDEX_LEVEL_V1);
 
     node.alarmTypeProperty = this.addProperty(
       node,
@@ -1490,6 +1495,16 @@ class ZWaveClassifier {
         readOnly: true,
       },
       alarmTypeValueId
+    );
+
+    node.alarmLevelProperty = this.addProperty(
+      node,
+      '_alarmLevel',
+      {
+        type: 'number',
+        readOnly: true,
+      },
+      alarmLevelValueId
     );
 
     if (node.zwInfo.manufacturerId === FIRST_ALERT_MANUFACTURER_ID &&
@@ -1522,27 +1537,34 @@ class ZWaveClassifier {
         }
       );
 
-      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
-      // the alarm type value
-      node.alarmTypeProperty.updated = function() {
+      const updateAlarms = () => {
         switch (node.alarmTypeProperty.value) {
-          /**
-           * TODO: determine the proper values here
-          case X:
-            node.setPropertyValue(node.smokeProperty, true);
+          case 1: {
+            // smoke alarm
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.smokeProperty, active);
             node.setPropertyValue(node.coProperty, false);
             break;
-          case Y:
-            node.setPropertyValue(node.coProperty, true);
+          }
+          case 2: {
+            // co alarm
+            const active = node.alarmLevelProperty.value === 255;
+            node.setPropertyValue(node.coProperty, active);
             node.setPropertyValue(node.smokeProperty, false);
             break;
-           */
-          default:
+          }
+          default: {
             node.setPropertyValue(node.coProperty, false);
             node.setPropertyValue(node.smokeProperty, false);
             break;
+          }
         }
       };
+
+      // The First Alert ZCOMBO-G combines the smoke and CO alarms into
+      // the alarm type value
+      node.alarmTypeProperty.updated = updateAlarms;
+      node.alarmLevelProperty.updated = updateAlarms;
 
       // Set the initial state
       node.alarmTypeProperty.updated();

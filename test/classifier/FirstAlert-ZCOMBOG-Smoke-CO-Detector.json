@@ -302,6 +302,14 @@
       "readOnly": true,
       "type": "number"
     },
+    "_alarmLevel": {
+      "name": "_alarmLevel",
+      "value": 255,
+      "visible": false,
+      "valueId": "48-113-1-513",
+      "readOnly": true,
+      "type": "number"
+    },
     "smoke": {
       "name": "smoke",
       "value": false,
