@@ -58,6 +58,10 @@ class ZWaveAdapter extends Adapter {
     this.port = port;
     this.ready = false;
     this.named = false;
+    this.pairing = false;
+    this.pairingTimeout = false;
+    this.removing = false;
+    this.removeTimeout = null;
 
     this.nodes = {};
     this.nodesBeingAdded = {};
@@ -293,8 +297,14 @@ class ZWaveAdapter extends Adapter {
 
     const node = this.nodes[nodeId];
     if (node) {
+      if (this.removeTimeout !== null) {
+        clearTimeout(this.removeTimeout);
+        this.removeTimeout = null;
+      }
+
       node.lastStatus = 'removed';
       this.handleDeviceRemoved(node);
+      this.removing = false;
     }
   }
 
@@ -408,23 +418,49 @@ class ZWaveAdapter extends Adapter {
     }
   }
 
-  // eslint-disable-next-line no-unused-vars
   startPairing(timeoutSeconds) {
+    if (this.pairing) {
+      return;
+    }
+
+    if (this.removing) {
+      const msg = 'Cannot pair while attempting to remove a device.';
+      console.log(msg);
+      if (this.sendPairingPrompt) {
+        this.sendPairingPrompt(msg);
+      }
+
+      return;
+    }
+
     const msg = 'Press the inclusion button on the ZWave device to add';
     console.log('===============================================');
     console.log(msg);
     console.log('===============================================');
+    this.pairing = true;
     if (this.sendPairingPrompt) {
-      console.log('Sending pairing prompt');
       this.sendPairingPrompt(msg);
     }
     const doSecurity = true;  // Will do secure inclusion, if available
     this.zwave.addNode(doSecurity);
+
+    this.pairingTimeout = setTimeout(
+      this.cancelPairing.bind(this),
+      timeoutSeconds * 1000
+    );
   }
 
   cancelPairing() {
-    console.log('Cancelling pairing mode');
-    this.zwave.cancelControllerCommand();
+    if (this.pairingTimeout !== null) {
+      clearTimeout(this.pairingTimeout);
+      this.pairingTimeout = null;
+    }
+
+    if (this.pairing) {
+      console.log('Cancelling pairing mode');
+      this.zwave.cancelControllerCommand();
+      this.pairing = false;
+    }
   }
 
   /**
@@ -434,23 +470,48 @@ class ZWaveAdapter extends Adapter {
    * @return {Promise} which resolves to the device removed.
    */
   removeThing(device) {
+    if (this.removing) {
+      return;
+    }
+
+    if (this.pairing) {
+      const msg = 'Cannot remove thing while pairing.';
+      console.log(msg);
+      if (this.sendUnpairingPrompt) {
+        this.sendUnpairingPrompt(msg, null, device);
+      }
+
+      return;
+    }
+
     // ZWave can't really remove a particular thing.
     const msg = 'Press the exclusion button on the ZWave device to remove';
     console.log('==================================================');
     console.log(msg);
     console.log('==================================================');
+    this.removing = true;
     if (this.sendUnpairingPrompt) {
-      console.log('Sending unpairing prompt');
       this.sendUnpairingPrompt(msg, null, device);
     }
 
     this.zwave.removeNode();
+
+    // Cancel the removal after 60 seconds. If the node is properly removed,
+    // the timeout will be cancelled in nodeRemoved().
+    this.removeTimeout = setTimeout(this.cancelRemoveThing.bind(this), 30000);
   }
 
-  // eslint-disable-next-line no-unused-vars
-  cancelRemoveThing(node) {
-    console.log('Cancelling remove mode');
-    this.zwave.cancelControllerCommand();
+  cancelRemoveThing() {
+    if (this.removeTimeout !== null) {
+      clearTimeout(this.removeTimeout);
+      this.removeTimeout = null;
+    }
+
+    if (this.removing) {
+      console.log('Cancelling remove mode');
+      this.zwave.cancelControllerCommand();
+      this.removing = false;
+    }
   }
 
   unload() {
