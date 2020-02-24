@@ -4,7 +4,7 @@ if [ -z "${ADDON_ARCH}" ]; then
   # This means we're running locally. Fake out ADDON_ARCH.
   # This happens when you run ./package.sh locally
   UNAME=$(uname -s)
-  case "$(uname -s)" in
+  case "${UNAME}" in
 
     Linux)
       ADDON_ARCH=linux-x64
@@ -42,13 +42,8 @@ fi
 # from this problem.
 export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
 
-if [ "$1" == "--dev" ]; then
-  PRODUCTION=
-else
-  PRODUCTION='--production'
-fi
-
 rm -rf node_modules
+
 if [ -z "${ADDON_ARCH}" ]; then
   TARFILE_SUFFIX=
 else
@@ -56,14 +51,7 @@ else
   TARFILE_SUFFIX="-${ADDON_ARCH}-${NODE_VERSION/\.*/}"
 fi
 
-# For openwrt-linux-arm and linux-arm we need to cross compile.
-if [[ "${ADDON_ARCH}" =~ "linux-arm" ]]; then
-  # We assume that CC and CXX are pointing to the cross compilers
-  npm install --ignore-scripts ${PRODUCTION}
-  npm rebuild --arch=armv6l --target_arch=arm
-else
-  npm install ${PRODUCTION}
-fi
+npm install --production
 
 OZW_PKG="libopenzwave"
 OZW_DIR="openzwave"
@@ -90,17 +78,20 @@ if [[ "${ADDON_ARCH}" =~ "linux" ]]; then
   patchelf --set-rpath '$ORIGIN/../../../../openzwave/lib' node_modules/openzwave-shared/build/Release/openzwave_shared.node
 fi
 
-rm -f SHA256SUMS
-sha256sum manifest.json package.json *.js zwave-loader.sh LICENSE > SHA256SUMS
-rm -rf node_modules/.bin
-find "node_modules" -type f -exec sha256sum {} \; >> SHA256SUMS
-find "${OZW_DIR}" -type f -exec sha256sum {} \; >> SHA256SUMS
-TARFILE="$(npm pack)"
+shasum --algorithm 256 manifest.json package.json *.js zwave-loader.sh LICENSE > SHA256SUMS
+
+find node_modules \( -type f -o -type l \) -exec shasum --algorithm 256 {} \; >> SHA256SUMS
+find "${OZW_DIR}" -type f -exec shasum --algorithm 256 {} \; >> SHA256SUMS
+
+TARFILE=`npm pack`
+
 tar xzf ${TARFILE}
 rm ${TARFILE}
 TARFILE_ARCH="${TARFILE/.tgz/${TARFILE_SUFFIX}.tgz}"
-cp -r "node_modules" "./package"
-cp -r "${OZW_DIR}" "./package"
-tar czf ${TARFILE_ARCH} "package"
-rm -rf "package"
-echo "Created ${TARFILE_ARCH}"
+cp -r node_modules ./package
+cp -r "${OZW_DIR}" ./package
+tar czf ${TARFILE_ARCH} package
+
+shasum --algorithm 256 ${TARFILE_ARCH} > ${TARFILE_ARCH}.sha256sum
+
+rm -rf SHA256SUMS package
