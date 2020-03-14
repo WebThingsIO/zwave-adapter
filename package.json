@@ -27,11 +27,11 @@
   "dependencies": {
     "color": "^3.1.2",
     "mkdirp": "^0.5.1",
-    "openzwave-shared": "^1.6.0",
-    "serialport": "^7.1.5"
+    "openzwave-shared": "^1.6.2",
+    "serialport": "^8.0.7"
   },
   "devDependencies": {
-    "babel-eslint": "^10.0.3",
+    "babel-eslint": "^10.1.0",
     "eslint": "^6.8.0",
     "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
     "jest": "^25.1.0"
