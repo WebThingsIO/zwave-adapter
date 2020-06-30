@@ -30,17 +30,25 @@ fi
 # that it's been installed.
 if [[ "${ADDON_ARCH}" =~ "linux" ]]; then
   if [[ ! $(type -P patchelf) ]]; then
-    echo "patchelf utility doesn't seem to be installed."
-    # patchelf should be installed in our raspberry pi cross compiler
-    # docker image, so you shouldn't really see this error.
-    exit 1
+    rm -rf patchelf
+    git clone https://github.com/NixOS/patchelf
+    (cd patchelf && ./bootstrap.sh && ./configure && make && sudo make install)
   fi
 fi
 
 # Make the C++ symbols be backwards compatible with gcc versions
 # prior to 5.1. In particular, the openzwave library suffers
 # from this problem.
+export CFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
 export CXXFLAGS=-D_GLIBCXX_USE_CXX11_ABI=0
+
+# We use our own fork of openzwave so that we can apply some patches.
+OPEN_ZWAVE="open-zwave"
+OZW_BRANCH=moziot
+rm -rf ${OPEN_ZWAVE}
+git clone -b ${OZW_BRANCH} --single-branch --depth=1 https://github.com/mozilla-iot/open-zwave ${OPEN_ZWAVE}
+make -C ${OPEN_ZWAVE}
+sudo make -C ${OPEN_ZWAVE} install
 
 rm -rf node_modules
 
