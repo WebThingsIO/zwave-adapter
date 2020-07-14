@@ -25,13 +25,13 @@ function isZWavePort(port) {
    *
    * Since `i` comes before `w` when the devices are listed, it's common for the
    * Zigbee radio to be returned as the ZWave radio. We need to scrutinize the
-   * comName of the radio to ensure that we're returning the actual ZWave one.
+   * path of the radio to ensure that we're returning the actual ZWave one.
    */
   const isHUSBZB1 = port.vendorId == '10c4' && port.productId == '8a2a';
   if (isHUSBZB1) {
-    const isGoControl = port.comName.indexOf('GoControl') >= 0;
+    const isGoControl = port.path.indexOf('GoControl') >= 0;
     if (isGoControl) {
-      return port.comName.indexOf('zwave') >= 0;
+      return port.path.indexOf('zwave') >= 0;
     }
 
     /**
@@ -70,8 +70,8 @@ function findZWavePort(callback) {
       // /dev/cu.usbXXX. tty.usbXXX requires DCD to be asserted which
       // isn't necessarily the case for ZWave dongles. The cu.usbXXX
       // doesn't care about DCD.
-      if (port.comName.startsWith('/dev/tty.usb')) {
-        port.comName = port.comName.replace('/dev/tty', '/dev/cu');
+      if (port.path.startsWith('/dev/tty.usb')) {
+        port.path = port.path.replace('/dev/tty', '/dev/cu');
       }
 
       if (isZWavePort(port)) {
@@ -127,7 +127,7 @@ async function loadZWaveAdapters(addonManager, _, errorCallback) {
       return;
     }
 
-    console.log('Found ZWave port @', port.comName);
+    console.log('Found ZWave port @', port.path);
 
     new ZWaveAdapter(addonManager, config, zwaveModule, port);
 

@@ -142,7 +142,7 @@ class ZWaveAdapter extends Adapter {
     this.zwave.on('value removed', this.valueRemoved.bind(this));
     this.zwave.on('scene event', this.sceneEvent.bind(this));
 
-    this.zwave.connect(port.comName);
+    this.zwave.connect(port.path);
   }
 
   asDict() {
@@ -179,7 +179,7 @@ class ZWaveAdapter extends Adapter {
 
   driverFailed() {
     console.log('failed to start driver');
-    this.zwave.disconnect(this.port.comName);
+    this.zwave.disconnect(this.port.path);
   }
 
   handleDeviceAdded(node) {
@@ -390,7 +390,7 @@ class ZWaveAdapter extends Adapter {
   }
 
   oneLineSummary() {
-    return `Controller: ${this.id} Path: ${this.port.comName}`;
+    return `Controller: ${this.id} Path: ${this.port.path}`;
   }
 
   sceneEvent(nodeId, sceneId) {
@@ -518,7 +518,7 @@ class ZWaveAdapter extends Adapter {
     // Wrap in setTimeout to resolve issues with disconnect() hanging.
     // See: https://github.com/OpenZWave/node-openzwave-shared/issues/182
     setTimeout(() => {
-      this.zwave.disconnect(this.port.comName);
+      this.zwave.disconnect(this.port.path);
     }).ref();
 
     return super.unload();

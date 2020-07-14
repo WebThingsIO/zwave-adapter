@@ -1,7 +1,7 @@
 {
   "name": "zwave-adapter",
   "display_name": "Z-Wave",
-  "version": "0.10.5",
+  "version": "0.10.6",
   "description": "Z-Wave adapter plugin for Mozilla WebThings Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
@@ -26,15 +26,15 @@
   },
   "dependencies": {
     "color": "^3.1.2",
-    "mkdirp": "^0.5.1",
-    "openzwave-shared": "^1.6.2",
-    "serialport": "^8.0.7"
+    "mkdirp": "^1.0.4",
+    "openzwave-shared": "^1.7.1",
+    "serialport": "^8.0.8"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "eslint": "^6.8.0",
+    "eslint": "^7.4.0",
     "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
-    "jest": "^25.1.0"
+    "jest": "^26.1.0"
   },
   "files": [
     "LICENSE",
