@@ -1,7 +1,6 @@
 {
   "name": "zwave-adapter",
-  "display_name": "Z-Wave",
-  "version": "0.10.6",
+  "version": "0.10.7",
   "description": "Z-Wave adapter plugin for Mozilla WebThings Gateway",
   "author": "Mozilla IoT",
   "main": "index.js",
@@ -9,12 +8,6 @@
     "lint": "eslint .",
     "jest": "jest"
   },
-  "keywords": [
-    "mozilla",
-    "iot",
-    "adapter",
-    "zwave"
-  ],
   "homepage": "https://github.com/mozilla-iot/zwave-adapter",
   "license": "MPL-2.0",
   "repository": {
@@ -32,7 +25,7 @@
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.4.0",
+    "eslint": "^7.5.0",
     "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
     "jest": "^26.1.0"
   },
@@ -50,32 +43,6 @@
     "zwave-node.js",
     "zwave-property.js"
   ],
-  "moziot": {
-    "api": {
-      "min": 2,
-      "max": 2
-    },
-    "enabled": true,
-    "plugin": true,
-    "exec": "{path}/zwave-loader.sh {nodeLoader} {path}",
-    "config": {
-      "networkKey": "",
-      "debug": ""
-    },
-    "schema": {
-      "type": "object",
-      "properties": {
-        "networkKey": {
-          "type": "string",
-          "description": "16-byte, comma-separated hex string (0xb4,0xc9,etc...)"
-        },
-        "debug": {
-          "type": "string",
-          "default": ""
-        }
-      }
-    }
-  },
   "jest": {
     "coverageDirectory": "./coverage/",
     "moduleFileExtensions": [
