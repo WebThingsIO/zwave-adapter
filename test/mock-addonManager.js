@@ -14,6 +14,7 @@ class MockAddonManager extends EventEmitter {
   constructor() {
     super();
     this.nodes = {};
+    this.userProfile = {};
   }
 
   handleDeviceAdded(node) {
