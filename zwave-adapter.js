@@ -26,7 +26,11 @@ const {
   DEBUG_flow,
 } = require('./zwave-debug');
 
-function getDataPath() {
+function getDataPath(dataDir) {
+  if (dataDir) {
+    return path.join(dataDir, 'zwave-adapter');
+  }
+
   let profileDir;
   if (process.env.hasOwnProperty('MOZIOT_HOME')) {
     profileDir = process.env.MOZIOT_HOME;
@@ -37,7 +41,11 @@ function getDataPath() {
   return path.join(profileDir, 'data', 'zwave-adapter');
 }
 
-function getLogPath() {
+function getLogPath(logDir) {
+  if (logDir) {
+    return logDir;
+  }
+
   if (process.env.hasOwnProperty('MOZIOT_HOME')) {
     return path.join(process.env.MOZIOT_HOME, 'log');
   }
@@ -66,13 +74,13 @@ class ZWaveAdapter extends Adapter {
     this.nodes = {};
     this.nodesBeingAdded = {};
 
-    const logDir = getDataPath();
+    const logDir = getDataPath(this.userProfile.dataDir);
     if (!fs.existsSync(logDir)) {
       mkdirp.sync(logDir, {mode: 0o755});
     }
 
     // move any old config files to the new directory
-    const oldLogDir = getLogPath();
+    const oldLogDir = getLogPath(this.userProfile.logDir);
     if (fs.existsSync(oldLogDir)) {
       const entries = fs.readdirSync(oldLogDir);
       for (const entry of entries) {

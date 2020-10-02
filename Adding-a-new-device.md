@@ -39,7 +39,7 @@ Pair the device. It will probably show up as a custom thing with no properties o
 
 ### Run the CLI
 
-Run the CLI: https://github.com/mozilla-iot/cli
+Run the CLI: https://github.com/WebThingsIO/cli
 
 ```
 cd cli

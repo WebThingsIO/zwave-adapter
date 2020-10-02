@@ -1,4 +1,4 @@
-name: Node.js application
+name: Build
 
 on:
   pull_request:
@@ -27,7 +27,7 @@ jobs:
         run: |
           sudo apt -qq update
           sudo apt install -y libudev-dev
-          git clone -b moziot --single-branch --depth=1 https://github.com/mozilla-iot/open-zwave
+          git clone -b moziot --single-branch --depth=1 https://github.com/WebThingsIO/open-zwave
           make -C open-zwave
           sudo make -C open-zwave install
       - name: Install node dependencies

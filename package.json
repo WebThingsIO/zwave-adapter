@@ -1,33 +1,33 @@
 {
   "name": "zwave-adapter",
-  "version": "0.10.7",
-  "description": "Z-Wave adapter plugin for Mozilla WebThings Gateway",
-  "author": "Mozilla IoT",
+  "version": "0.10.8",
+  "description": "Z-Wave adapter plugin for WebThings Gateway",
+  "author": "WebThingsIO",
   "main": "index.js",
   "scripts": {
     "lint": "eslint .",
     "jest": "jest"
   },
-  "homepage": "https://github.com/mozilla-iot/zwave-adapter",
+  "homepage": "https://github.com/WebThingsIO/zwave-adapter",
   "license": "MPL-2.0",
   "repository": {
     "type": "git",
-    "url": "https://github.com/mozilla-iot/zwave-adapter.git"
+    "url": "https://github.com/WebThingsIO/zwave-adapter.git"
   },
   "bugs": {
-    "url": "https://github.com/mozilla-iot/zwave-adapter/issues"
+    "url": "https://github.com/WebThingsIO/zwave-adapter/issues"
   },
   "dependencies": {
     "color": "^3.1.2",
     "mkdirp": "^1.0.4",
     "openzwave-shared": "^1.7.1",
-    "serialport": "^8.0.8"
+    "serialport": "^9.0.1"
   },
   "devDependencies": {
     "babel-eslint": "^10.1.0",
-    "eslint": "^7.5.0",
-    "gateway-addon": "https://github.com/mozilla-iot/gateway-addon-node",
-    "jest": "^26.1.0"
+    "eslint": "^7.10.0",
+    "gateway-addon": "github:WebThingsIO/gateway-addon-node",
+    "jest": "^26.4.2"
   },
   "files": [
     "LICENSE",

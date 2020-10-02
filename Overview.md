@@ -26,11 +26,11 @@ A zwave ValueID is made up of 4 components:
 * NodeID - (1-255) Refers to the device that you're dealing with. NodeId 1 is assigned to the dongle and remaining devices get assigned an incrementing ID each time a device is paired. Unpairing and repairing a device will give it a new NodeID.
 * Class ID - (aka COMMAND_CLASS). This describe the major functionality that the command class offers.
 * Instance - normally 1, but may have other values if the device supports multiple instances (like a device with 2 outlets where each outlet command be controlled)
-* Index - defines 1 particular attribute of the command class. The file: https://github.com/mozilla-iot/open-zwave/blob/master/cpp/src/ValueIDIndexesDefines.def is what OpenZWave uses.
+* Index - defines 1 particular attribute of the command class. The file: https://github.com/WebThingsIO/open-zwave/blob/master/cpp/src/ValueIDIndexesDefines.def is what OpenZWave uses.
 
 ### OpenZWave
 
-We use a fork of OpenZWave https://github.com/mozilla-iot/open-zwave/ and use
+We use a fork of OpenZWave https://github.com/WebThingsIO/open-zwave/ and use
 the `moziot` tag to determine which revision to checkout. You'll want to
 bump the moziot tag periodically to grab new fixes/versions.
 
@@ -38,7 +38,7 @@ bump the moziot tag periodically to grab new fixes/versions.
 
 The OpenZWave library communicates with the adapter through a series of
 callbacks:
-https://github.com/mozilla-iot/zwave-adapter/blob/5d225b2ba058ce36296c8d170aa81a820c56f71a/zwave-adapter.js#L125
+https://github.com/WebThingsIO/zwave-adapter/blob/5d225b2ba058ce36296c8d170aa81a820c56f71a/zwave-adapter.js#L125
 
 After calling zwave.connect, the driverReady callback will be called
 (telling the adapter the homeId).
