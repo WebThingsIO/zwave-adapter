@@ -866,7 +866,8 @@
   "@context": "https://iot.mozilla.org/schemas",
   "@type": [
     "MotionSensor",
-    "TemperatureSensor"
+    "TemperatureSensor",
+    "HumiditySensor"
   ],
   "description": "",
   "properties": {
@@ -920,7 +921,7 @@
       "visible": true,
       "title": "Humidity",
       "type": "number",
-      "@type": "LevelProperty",
+      "@type": "HumidityProperty",
       "unit": "percent",
       "minimum": 0,
       "maximum": 100,

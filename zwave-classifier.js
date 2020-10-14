@@ -88,13 +88,13 @@ const NOTIFICATION_COMBUSTIBLE_GAS = 18;
 const NOTIFICATION_SENSOR = {
   [NOTIFICATION_SMOKE_DETECTOR]: {// 1
     name: 'smoke',
-    '@type': ['Alarm'],
+    '@type': ['SmokeSensor'],
     propertyName: 'on',
     propertyDescr: {
-      '@type': 'AlarmProperty',
+      '@type': 'SmokeProperty',
       type: 'boolean',
       label: 'Smoke',
-      description: 'Smoke Detector',
+      description: 'Smoke Sensor',
       readOnly: true,
     },
     valueListMap: [false, true],
@@ -810,7 +810,7 @@ class ZWaveClassifier {
       node,
       'humidity',
       {
-        '@type': 'LevelProperty',
+        '@type': 'HumidityProperty',
         label: 'Humidity',
         type: 'number',
         minimum: 0,
@@ -820,6 +820,10 @@ class ZWaveClassifier {
       },
       humidityValueId
     );
+
+    if (!node['@type'].includes('HumiditySensor')) {
+      node['@type'].push('HumiditySensor');
+    }
   }
 
   addLuminanceProperty(node, luminanceValueId) {
@@ -864,14 +868,19 @@ class ZWaveClassifier {
       node,
       'carbonMonoxideLevel',
       {
+        '@type': 'ConcentrationProperty',
         label: 'Carbon Monoxide Level',
         type: 'number',
         readOnly: true,
-        unit: 'Ppm',
+        unit: 'ppm',
         multipleOf: 0.1,
       },
       carbonMonoxideValueId,
     );
+
+    if (!node['@type'].includes('AirQualitySensor')) {
+      node['@type'].push('AirQualitySensor');
+    }
   }
 
   addHeatingTargetTemperatureProperty(node, heatingTargetTempValueId) {
@@ -1516,14 +1525,18 @@ class ZWaveClassifier {
         node['@type'].push('Alarm');
       }
 
+      if (!node['@type'].includes('SmokeSensor')) {
+        node['@type'].push('SmokeSensor');
+      }
+
       node.smokeProperty = this.addProperty(
         node,
         'smoke',
         {
-          '@type': 'AlarmProperty',
+          '@type': 'SmokeProperty',
           type: 'boolean',
           label: 'Smoke',
-          description: 'Smoke Detector',
+          description: 'Smoke Sensor',
           readOnly: true,
         }
       );

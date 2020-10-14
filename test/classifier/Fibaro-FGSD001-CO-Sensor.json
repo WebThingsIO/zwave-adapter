@@ -1258,7 +1258,8 @@
   "@context": "https://iot.mozilla.org/schemas",
   "@type": [
     "Alarm",
-    "TemperatureSensor"
+    "TemperatureSensor",
+    "AirQualitySensor"
   ],
   "description": "",
   "properties": {
@@ -1338,7 +1339,8 @@
       "visible": true,
       "title": "Carbon Monoxide Level",
       "type": "number",
-      "unit": "Ppm",
+      "@type": "ConcentrationProperty",
+      "unit": "ppm",
       "readOnly": true,
       "multipleOf": 0.1,
       "valueId": "3-49-1-40"

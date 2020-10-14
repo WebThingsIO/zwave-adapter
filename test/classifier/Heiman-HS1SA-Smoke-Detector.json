@@ -627,7 +627,7 @@
   "type": "thing",
   "@context": "https://iot.mozilla.org/schemas",
   "@type": [
-    "Alarm"
+    "SmokeSensor"
   ],
   "description": "",
   "properties": {
@@ -637,8 +637,8 @@
       "visible": true,
       "title": "Smoke",
       "type": "boolean",
-      "@type": "AlarmProperty",
-      "description": "Smoke Detector",
+      "@type": "SmokeProperty",
+      "description": "Smoke Sensor",
       "readOnly": true,
       "valueId": "4-113-1-1"
     },

@@ -290,7 +290,8 @@
   "type": "thing",
   "@context": "https://iot.mozilla.org/schemas",
   "@type": [
-    "Alarm"
+    "Alarm",
+    "SmokeSensor"
   ],
   "description": "",
   "properties": {
@@ -315,10 +316,10 @@
       "value": false,
       "visible": true,
       "title": "Smoke",
-      "description": "Smoke Detector",
+      "description": "Smoke Sensor",
       "readOnly": true,
       "type": "boolean",
-      "@type": "AlarmProperty"
+      "@type": "SmokeProperty"
     },
     "co": {
       "name": "co",
