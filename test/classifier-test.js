@@ -51,6 +51,18 @@ function classifyJson(pathname) {
         console.log('Testing property', propertyName);
         if (json.properties.hasOwnProperty(propertyName)) {
           const jsonProperty = json.properties[propertyName];
+
+          /* eslint-disable no-self-assign */
+          jsonProperty.description = jsonProperty.description;
+          jsonProperty.enum = jsonProperty.enum;
+          jsonProperty.links = jsonProperty.links || [];
+          jsonProperty.maximum = jsonProperty.maximum;
+          jsonProperty.minimum = jsonProperty.minimum;
+          jsonProperty.multipleOf = jsonProperty.multipleOf;
+          jsonProperty.readOnly = jsonProperty.readOnly;
+          jsonProperty.unit = jsonProperty.unit;
+          /* eslint-enable no-self-assign */
+
           expect(property.asDict()).toEqual(jsonProperty);
         } else {
           fail(`Missing property ${propertyName}`);
