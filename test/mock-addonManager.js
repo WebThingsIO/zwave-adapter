@@ -24,6 +24,17 @@ class MockAddonManager extends EventEmitter {
   sendPropertyChangedNotification(_property) {
   }
 
+  getGatewayVersion() {
+    return '';
+  }
+
+  getUserProfile() {
+    return {};
+  }
+
+  getPreferences() {
+    return {};
+  }
 }
 
 module.exports = MockAddonManager;

@@ -72,6 +72,13 @@ class ZWaveNode extends Device {
     dict.zwInfo = this.zwInfo;
     dict.zwClasses = this.zwClasses;
     dict.zwValues = this.zwValues;
+
+    for (const prop of Object.values(dict.properties)) {
+      if (!prop.visible) {
+        delete dict.properties[prop.name];
+      }
+    }
+
     return dict;
   }
 
