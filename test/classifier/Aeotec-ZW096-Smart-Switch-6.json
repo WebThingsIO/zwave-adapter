@@ -1255,7 +1255,6 @@
     "on": {
       "name": "on",
       "value": true,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -1264,7 +1263,6 @@
     "instantaneousPower": {
       "name": "instantaneousPower",
       "value": "0.000",
-      "visible": true,
       "title": "Power",
       "type": "number",
       "@type": "InstantaneousPowerProperty",
@@ -1274,7 +1272,6 @@
     "voltage": {
       "name": "voltage",
       "value": "120.769",
-      "visible": true,
       "title": "Voltage",
       "type": "number",
       "@type": "VoltageProperty",

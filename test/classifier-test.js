@@ -53,9 +53,12 @@ function classifyJson(pathname) {
           const jsonProperty = json.properties[propertyName];
 
           /* eslint-disable no-self-assign */
+          jsonProperty['@type'] = jsonProperty['@type'];
+          jsonProperty.type = jsonProperty.type;
+          jsonProperty.title = jsonProperty.title;
           jsonProperty.description = jsonProperty.description;
           jsonProperty.enum = jsonProperty.enum;
-          jsonProperty.links = jsonProperty.links || [];
+          jsonProperty.forms = jsonProperty.forms || [];
           jsonProperty.maximum = jsonProperty.maximum;
           jsonProperty.minimum = jsonProperty.minimum;
           jsonProperty.multipleOf = jsonProperty.multipleOf;

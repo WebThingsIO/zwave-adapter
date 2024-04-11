@@ -1266,7 +1266,6 @@
     "co": {
       "name": "co",
       "value": false,
-      "visible": true,
       "title": "CO",
       "type": "boolean",
       "@type": "AlarmProperty",
@@ -1277,7 +1276,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -1288,7 +1286,6 @@
     "overheat": {
       "name": "overheat",
       "value": false,
-      "visible": true,
       "title": "Overheat",
       "type": "boolean",
       "@type": "AlarmProperty",
@@ -1299,7 +1296,6 @@
     "temperature": {
       "name": "temperature",
       "value": "29.2",
-      "visible": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",
@@ -1311,7 +1307,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 21600,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -1323,7 +1318,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",
@@ -1336,7 +1330,6 @@
     "carbonMonoxideLevel": {
       "name": "carbonMonoxideLevel",
       "value": "0.0",
-      "visible": true,
       "title": "Carbon Monoxide Level",
       "type": "number",
       "@type": "ConcentrationProperty",

@@ -143,7 +143,6 @@ cli http://localhost:8080 zwave-e9880e42-9> info
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 0,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

@@ -703,7 +703,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -713,7 +712,6 @@
     "level": {
       "name": "level",
       "value": 0,
-      "visible": true,
       "title": "Level",
       "type": "number",
       "@type": "LevelProperty",
@@ -742,7 +740,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 67,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

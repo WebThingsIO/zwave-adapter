@@ -754,10 +754,11 @@ class ZWaveClassifier {
     DEBUG && console.log(`classify: ${node.id} added property: ${name}`,
                          `valueId: ${valueId} value: ${property.value}`);
 
-    node.properties.set(name, property);
     if (name[0] == '_') {
       property.visible = false;
     }
+
+    node.properties.set(name, property);
     // Invisible properties are no longer exposed in Thing Descriptions so
     // should eventually be removed entirely.
     // See https://github.com/WebThingsIO/zwave-adapter/issues/140

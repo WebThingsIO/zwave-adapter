@@ -793,7 +793,6 @@
     "on": {
       "name": "on",
       "value": true,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -810,7 +809,6 @@
     "color": {
       "name": "color",
       "value": "#FFFF00",
-      "visible": true,
       "title": "Color",
       "type": "string",
       "@type": "ColorProperty",
@@ -819,7 +817,6 @@
     "warmLevel": {
       "name": "warmLevel",
       "value": 0,
-      "visible": true,
       "title": "Warm Level",
       "type": "number",
       "@type": "LevelProperty",
@@ -831,7 +828,6 @@
     "coolLevel": {
       "name": "coolLevel",
       "value": 0,
-      "visible": true,
       "title": "Cool Level",
       "type": "number",
       "@type": "LevelProperty",

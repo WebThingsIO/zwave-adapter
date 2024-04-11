@@ -1209,7 +1209,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "Water",
       "type": "boolean",
       "@type": "LeakProperty",
@@ -1221,7 +1220,6 @@
       "name": "temperature",
       "value": 21.277777777777775,
       "multipleOf": 0.1,
-      "visible": true,
       "readOnly": true,
       "title": "Temperature",
       "type": "number",
@@ -1232,7 +1230,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 3600,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -1244,7 +1241,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

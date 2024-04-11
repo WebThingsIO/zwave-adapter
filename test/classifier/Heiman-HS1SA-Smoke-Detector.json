@@ -634,7 +634,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "Smoke",
       "type": "boolean",
       "@type": "SmokeProperty",
@@ -653,7 +652,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 86400,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -665,7 +663,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",
