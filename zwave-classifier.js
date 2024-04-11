@@ -758,6 +758,9 @@ class ZWaveClassifier {
     if (name[0] == '_') {
       property.visible = false;
     }
+    // Invisible properties are no longer exposed in Thing Descriptions so
+    // should eventually be removed entirely.
+    // See https://github.com/WebThingsIO/zwave-adapter/issues/140
     return property;
   }
 
