@@ -314,7 +314,6 @@
     "smoke": {
       "name": "smoke",
       "value": false,
-      "visible": true,
       "title": "Smoke",
       "description": "Smoke Sensor",
       "readOnly": true,
@@ -324,7 +323,6 @@
     "co": {
       "name": "co",
       "value": false,
-      "visible": true,
       "title": "CO",
       "description": "Carbon Monoxide Detector",
       "readOnly": true,
@@ -334,7 +332,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 3600,
-      "visible": true,
       "title": "WakeUp Interval",
       "type": "number",
       "unit": "seconds",
@@ -343,7 +340,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

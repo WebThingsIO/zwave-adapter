@@ -675,7 +675,6 @@
     "open": {
       "name": "open",
       "value": false,
-      "visible": true,
       "title": "Open",
       "type": "boolean",
       "@type": "OpenProperty",
@@ -686,7 +685,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -697,7 +695,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 3600,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -709,7 +706,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 80,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

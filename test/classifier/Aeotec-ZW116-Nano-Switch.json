@@ -1547,7 +1547,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -1556,7 +1555,6 @@
     "config-120": {
       "name": "config-120",
       "value": "Unidentified",
-      "visible": true,
       "title": "S1 Mode",
       "type": "string",
       "enum": [
@@ -1571,7 +1569,6 @@
     "config-121": {
       "name": "config-121",
       "value": "Unidentified",
-      "visible": true,
       "title": "S2 Mode",
       "type": "string",
       "enum": [
@@ -1586,7 +1583,6 @@
     "instantaneousPower": {
       "name": "instantaneousPower",
       "value": "0.000",
-      "visible": true,
       "title": "Power",
       "type": "number",
       "@type": "InstantaneousPowerProperty",
@@ -1596,7 +1592,6 @@
     "voltage": {
       "name": "voltage",
       "value": "120.057",
-      "visible": true,
       "title": "Voltage",
       "type": "number",
       "@type": "VoltageProperty",

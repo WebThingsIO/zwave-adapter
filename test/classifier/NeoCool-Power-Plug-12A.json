@@ -26,8 +26,7 @@
             "title": "On/Off",
             "type": "boolean",
             "value": false,
-            "valueId": "2-37-1-0",
-            "visible": true
+            "valueId": "2-37-1-0"
         },
         "instantaneousPower": {
             "@type": "InstantaneousPowerProperty",
@@ -36,8 +35,7 @@
             "type": "number",
             "unit": "watt",
             "value": "0.00",
-            "valueId": "2-50-1-2",
-            "visible": true
+            "valueId": "2-50-1-2"
         },
         "voltage": {
             "@type": "VoltageProperty",
@@ -46,8 +44,7 @@
             "type": "number",
             "unit": "volt",
             "value": "225.28",
-            "valueId": "2-50-1-4",
-            "visible": true
+            "valueId": "2-50-1-4"
         },
         "current": {
             "@type": "CurrentProperty",
@@ -57,7 +54,6 @@
             "unit": "ampere",
             "value": "0.00",
             "valueId": "2-50-1-5",
-            "visible": true,
             "multipleOf": 0.01
         }
     },

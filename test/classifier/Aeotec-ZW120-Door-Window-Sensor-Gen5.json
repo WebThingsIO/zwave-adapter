@@ -801,7 +801,6 @@
     "open": {
       "name": "open",
       "value": false,
-      "visible": true,
       "title": "Open",
       "type": "boolean",
       "@type": "OpenProperty",
@@ -812,7 +811,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -823,7 +821,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

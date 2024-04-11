@@ -368,7 +368,6 @@
     "on": {
       "name": "on",
       "value": true,
-      "visible": true,
       "@type": "BooleanProperty",
       "type": "boolean",
       "readOnly": true,
@@ -377,7 +376,6 @@
     "open": {
       "name": "open",
       "value": true,
-      "visible": true,
       "title": "Open",
       "@type": "OpenProperty",
       "type": "boolean",
@@ -388,7 +386,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 86400,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -400,7 +397,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 70,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

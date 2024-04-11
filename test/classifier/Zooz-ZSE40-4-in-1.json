@@ -874,7 +874,6 @@
     "motion": {
       "name": "motion",
       "value": false,
-      "visible": true,
       "title": "Motion",
       "type": "boolean",
       "@type": "MotionProperty",
@@ -885,7 +884,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -897,7 +895,6 @@
       "name": "temperature",
       "value": 21.594444444444445,
       "multipleOf": 0.1,
-      "visible": true,
       "readOnly": true,
       "title": "Temperature",
       "type": "number",
@@ -909,7 +906,6 @@
       "name": "luminance",
       "readOnly": true,
       "value": "1.56",
-      "visible": true,
       "title": "Luminance",
       "type": "number",
       "unit": "lux",
@@ -918,7 +914,6 @@
     "humidity": {
       "name": "humidity",
       "value": "42.21",
-      "visible": true,
       "title": "Humidity",
       "type": "number",
       "@type": "HumidityProperty",
@@ -931,7 +926,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 43200,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -943,7 +937,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

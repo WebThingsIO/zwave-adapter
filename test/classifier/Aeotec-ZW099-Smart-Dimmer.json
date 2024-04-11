@@ -1372,7 +1372,6 @@
     "on": {
       "name": "on",
       "value": true,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -1381,7 +1380,6 @@
     "level": {
       "name": "level",
       "value": 20,
-      "visible": true,
       "title": "Level",
       "type": "number",
       "@type": "LevelProperty",
@@ -1393,7 +1391,6 @@
     "instantaneousPower": {
       "name": "instantaneousPower",
       "value": "0.000",
-      "visible": true,
       "title": "Power",
       "type": "number",
       "@type": "InstantaneousPowerProperty",
@@ -1403,7 +1400,6 @@
     "voltage": {
       "name": "voltage",
       "value": "120.411",
-      "visible": true,
       "title": "Voltage",
       "type": "number",
       "@type": "VoltageProperty",

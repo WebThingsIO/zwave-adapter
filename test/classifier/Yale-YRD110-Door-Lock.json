@@ -2644,7 +2644,6 @@
     "locked": {
       "name": "locked",
       "value": "unlocked",
-      "visible": true,
       "title": "State",
       "@type": "LockedProperty",
       "enum": ["locked", "unlocked", "jammed", "unknown"],
@@ -2671,7 +2670,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

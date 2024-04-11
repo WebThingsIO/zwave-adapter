@@ -471,7 +471,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",

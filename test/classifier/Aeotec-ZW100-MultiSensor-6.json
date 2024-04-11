@@ -1548,7 +1548,6 @@
     "motion": {
       "name": "motion",
       "value": false,
-      "visible": true,
       "title": "Motion",
       "type": "boolean",
       "@type": "MotionProperty",
@@ -1559,7 +1558,6 @@
     "config-3": {
       "name": "config-3",
       "value": 240,
-      "visible": true,
       "title": "Motion Timeout",
       "type": "number",
       "@type": "LevelProperty",
@@ -1571,7 +1569,6 @@
     "config-4": {
       "name": "config-4",
       "value": "Enabled level 5",
-      "visible": true,
       "title": "Motion Sensitivity",
       "type": "string",
       "enum": [
@@ -1587,7 +1584,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -1598,7 +1594,6 @@
     "temperature": {
       "name": "temperature",
       "value": "25.4",
-      "visible": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",
@@ -1610,7 +1605,6 @@
     "luminance": {
       "name": "luminance",
       "value": "0",
-      "visible": true,
       "title": "Luminance",
       "type": "number",
       "unit": "lux",
@@ -1620,7 +1614,6 @@
     "humidity": {
       "name": "humidity",
       "value": "50",
-      "visible": true,
       "title": "Humidity",
       "type": "number",
       "@type": "HumidityProperty",
@@ -1633,7 +1626,6 @@
     "uvIndex": {
       "name": "uvIndex",
       "value": "0",
-      "visible": true,
       "title": "UV Index",
       "type": "number",
       "readOnly": true,
@@ -1642,7 +1634,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 3600,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -1654,7 +1645,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

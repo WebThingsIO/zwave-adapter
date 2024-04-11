@@ -1337,7 +1337,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "On/Off",
       "type": "boolean",
       "@type": "OnOffProperty",
@@ -1346,7 +1345,6 @@
     "config-120": {
       "name": "config-120",
       "value": "Unidentified",
-      "visible": true,
       "title": "S1 Mode",
       "type": "string",
       "enum": [
@@ -1361,7 +1359,6 @@
     "config-121": {
       "name": "config-121",
       "value": "Unidentified",
-      "visible": true,
       "title": "S2 Mode",
       "type": "string",
       "enum": [
@@ -1376,7 +1373,6 @@
     "on2": {
       "name": "on2",
       "value": true,
-      "visible": true,
       "title": "On/Off (2)",
       "type": "boolean",
       "@type": "BooleanProperty",

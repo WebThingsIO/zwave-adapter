@@ -675,7 +675,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "Water",
       "type": "boolean",
       "@type": "LeakProperty",
@@ -686,7 +685,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -697,7 +695,6 @@
     "freeze": {
       "name": "freeze",
       "value": false,
-      "visible": true,
       "title": "Freeze",
       "@type": "BooleanProperty",
       "type": "boolean",
@@ -707,7 +704,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 14400,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -719,7 +715,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 99,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

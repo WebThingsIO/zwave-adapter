@@ -389,7 +389,6 @@
     "heating": {
       "name": "heating",
       "value": "idle",
-      "visible": true,
       "title": "Heating/Cooling",
       "type": "string",
       "@type": "HeatingCoolingProperty",
@@ -399,7 +398,6 @@
     "thermostatMode": {
       "name": "thermostatMode",
       "value": "cool",
-      "visible": true,
       "title": "Mode",
       "type": "string",
       "@type": "ThermostatModeProperty",
@@ -417,7 +415,6 @@
     "heatingTargetTemperature": {
       "name": "heatingTargetTemperature",
       "value": "26.0",
-      "visible": true,
       "title": "Heating Target",
       "type": "number",
       "@type": "TargetTemperatureProperty",
@@ -430,7 +427,6 @@
     "coolingTargetTemperature": {
       "name": "coolingTargetTemperature",
       "value": "28.0",
-      "visible": true,
       "title": "Cooling Target",
       "type": "number",
       "@type": "TargetTemperatureProperty",
@@ -443,7 +439,6 @@
     "fanMode": {
       "name": "fanMode",
       "value": "Auto Low",
-      "visible": true,
       "title": "Fan Mode",
       "type": "string",
       "enum": [
@@ -456,7 +451,6 @@
     "fanState": {
       "name": "fanState",
       "value": "Idle",
-      "visible": true,
       "title": "Fan State",
       "type": "string",
       "readOnly": true,
@@ -465,7 +459,6 @@
     "temperature": {
       "name": "temperature",
       "value": "24.5",
-      "visible": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",

@@ -743,7 +743,6 @@
     "on": {
       "name": "on",
       "value": false,
-      "visible": true,
       "title": "Smoke",
       "type": "boolean",
       "@type": "SmokeProperty",
@@ -762,7 +761,6 @@
     "co": {
       "name": "co",
       "value": false,
-      "visible": true,
       "title": "CO",
       "type": "boolean",
       "@type": "AlarmProperty",
@@ -773,7 +771,6 @@
     "tamper": {
       "name": "tamper",
       "value": false,
-      "visible": true,
       "title": "Tamper",
       "type": "boolean",
       "@type": "TamperProperty",
@@ -784,7 +781,6 @@
     "temperature": {
       "name": "temperature",
       "value": "25.70",
-      "visible": true,
       "title": "Temperature",
       "type": "number",
       "@type": "TemperatureProperty",
@@ -796,7 +792,6 @@
     "wakeUpInterval": {
       "name": "wakeUpInterval",
       "value": 14400,
-      "visible": true,
       "title": "WakeUp Interval",
       "@type": "LevelProperty",
       "type": "number",
@@ -808,7 +803,6 @@
     "batteryLevel": {
       "name": "batteryLevel",
       "value": 100,
-      "visible": true,
       "title": "Battery",
       "type": "number",
       "@type": "LevelProperty",

@@ -63,6 +63,9 @@ class ZWaveProperty extends Property {
     const dict = super.asDict();
     dict.valueId = this.valueId;
     dict.value = this.value;
+    if (this.hasOwnProperty('visible')) {
+      dict.visible = this.visible;
+    }
     return dict;
   }
 
