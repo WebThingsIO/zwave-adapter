@@ -1,6 +1,6 @@
 {
   "name": "zwave-adapter",
-  "version": "0.10.9",
+  "version": "0.11.0",
   "description": "Z-Wave adapter plugin for WebThings Gateway",
   "author": "WebThingsIO",
   "main": "index.js",
